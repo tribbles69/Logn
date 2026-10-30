@@ -62,6 +62,8 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 .result{font-size:15px;line-height:1.5;margin:0 0 14px}
 .num{width:130px;font:inherit;font-size:28px;text-align:center;background:var(--bg);border:1px solid var(--line);
   border-radius:14px;color:var(--text);padding:10px;font-variant-numeric:tabular-nums}
+.num::-webkit-inner-spin-button,.num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.num{-moz-appearance:textfield}
 .num.bad{border-color:#a05a5a}
 .btns{display:flex;gap:10px;justify-content:center;margin:16px 0 14px}
 .btn{border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-size:15px;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -72,6 +74,22 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 .holdbtn.on{background:#13221f;color:var(--text)}
 .note{font-size:12px;color:var(--dim);margin:14px 0 10px;line-height:1.45}
 .big{font-size:44px;font-weight:300;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+.hrbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-top:4px}
+.hrtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hrlbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.hrstate{font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.hrwhy{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4}
+.hrwhy:empty{display:none}
+.hrbtns{display:flex;gap:8px;margin-top:10px}
+.hrbtns .btn{padding:8px 14px;font-size:14px}
+.hrbtns .pri{flex:1}
+.hrhelp{margin-top:10px;font-size:13px;color:var(--dim);line-height:1.5}
+.hrhelp summary{cursor:pointer;font-size:13px}
+.hrhelp b{color:var(--text);font-weight:500}
+.watchrow{display:flex;align-items:center;justify-content:center;gap:10px;margin:-4px 0 14px;font-size:14px;color:var(--dim)}
+.watchrow b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+#hrLive{position:absolute;top:calc(env(safe-area-inset-top) + 36px);left:0;right:0;text-align:center;
+  font-size:13px;color:rgba(214,226,224,.28);font-variant-numeric:tabular-nums;pointer-events:none}
 .cmpnote{color:var(--dim);font-size:12px;margin-top:8px;line-height:1.4}
 
 /* ---------- session ---------- */
@@ -175,6 +193,23 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
     <button class="toggle" id="tMeasure">Measures</button>
   </div>
 
+  <div class="hrbox">
+    <div class="hrtop"><span class="hrlbl">Heart rate</span><span id="hrState" class="hrstate">Not connected</span></div>
+    <div class="hrwhy" id="hrWhy"></div>
+    <div class="hrbtns">
+      <button class="btn pri" id="hrPick">Connect watch or strap</button>
+      <button class="btn" id="hrAll">Not listed?</button>
+    </div>
+    <details class="hrhelp"><summary>Using a smartwatch</summary>
+      <div>Turn on heart-rate broadcast on the watch first, then connect.
+      <br>• <b>Garmin</b>: hold the menu button, then Settings, Sensors (or Wrist Heart Rate), Broadcast Heart Rate.
+      <br>• <b>Polar, Coros, Suunto, Amazfit</b>: look for "HR broadcast" or "share heart rate" in the watch settings.
+      <br>• <b>Samsung Galaxy Watch, Wear OS</b>: the watch connects but sends nothing on its own. Install a heart-rate broadcast app on the watch (search the Play Store <i>on the watch</i> for "heart rate broadcast" or "HR BLE"), start it, then connect here. If nothing arrives, also start a workout on the watch.
+      <br>• <b>Apple Watch and Fitbit</b> can't send heart rate to a browser, so use a chest strap or arm band.
+      <br>If the watch doesn't appear, try <b>Not listed?</b>, which shows every nearby device.</div>
+    </details>
+  </div>
+
   <div class="sec">Recent sessions</div>
   <div id="hist"></div>
   <div class="foot"><span id="stats"></span><button id="export">Export data</button></div>
@@ -192,6 +227,7 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
   <canvas id="cv"></canvas>
   <canvas id="ov"></canvas>
   <div id="clock"></div>
+  <div id="hrLive"></div>
   <div id="cue"></div>
   <button id="end">END</button>
 </div>
@@ -252,6 +288,7 @@ function renderHist(){
     if(s.before && s.after){ right += ` · <span class="delta">${s.before}→${s.after}</span>` }
     if(hasHr(s)) right += ` · <span class="delta">♥ ${s.hrB}→${s.hrA}</span>`;
     if(hasCp(s)) right += ` · <span class="delta">CP ${s.cpB}→${s.cpA}s</span>`;
+    if(s.hrMin != null) right += ` · <span class="delta">low ${s.hrMin}</span>`;
     if(s.score != null) right += ` · ${s.score}%`;
     return `<div class="h"><span>${sessLabel(s)}<br><small>${when}</small></span><small style="text-align:right">${right}</small></div>`;
   }).join('');
@@ -306,20 +343,175 @@ function showResult(html){
   });
 }
 
+/* ================= heart rate over Web Bluetooth (standard Heart Rate Service) =================
+   Same approach as Ironlog's cardio: chest straps and watches that broadcast HR. */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function parseHr(dv){ const f = dv.getUint8(0); return f & 1 ? dv.getUint16(1, true) : dv.getUint8(1) }
+/* Flags bits 1–2: bit 2 = the device reports skin contact, bit 1 = contact now. */
+function hrContact(dv){ const f = dv.getUint8(0); return f & 4 ? !!(f & 2) : null }
+const HR_FRESH = 6; // seconds before a reading counts as stale
+const HR = {
+  dev:null, ch:null, state:'none', name:'', samples:[], tries:0, note:'',
+  diag:{at:0, pkts:0, zeros:0, bpm:null, contact:null, resub:false},
+  supported(){ return !!(navigator.bluetooth && navigator.bluetooth.requestDevice) },
+  /* A strap advertises the Heart Rate service and shows up with the filter. A watch only
+     does once broadcast is on, and some don't advertise it at all, so `all` lists everything. */
+  async pick(all){
+    if(!this.supported()) return this.say('Bluetooth heart rate needs Chrome on Android.');
+    let dev;
+    try{
+      dev = await navigator.bluetooth.requestDevice(all
+        ? {acceptAllDevices:true, optionalServices:['heart_rate']}
+        : {filters:[{services:['heart_rate']}]});
+    }catch(e){
+      if(e && e.name !== 'NotFoundError') this.say(`Couldn't open the device list: ${(e && e.message) || 'unknown error'}`); // NotFound = picker cancelled
+      return;
+    }
+    this.adopt(dev);
+    try{ await this.connect() }
+    catch(e){
+      this.state = 'lost';
+      this.say(e && e.name === 'NotFoundError'
+        ? `${this.name} isn't sending heart rate. Turn on heart-rate broadcast on the watch, then try again.`
+        : `Couldn't connect to ${this.name}: ${(e && e.message) || 'unknown error'}`);
+    }
+  },
+  adopt(dev){
+    this.forget();
+    this.dev = dev; this.name = dev.name || 'Heart-rate device';
+    dev.addEventListener('gattserverdisconnected', HR.lost);
+    S.hrDevice = this.name; saveS(); // remembered, so next time it reconnects without the picker
+  },
+  /* Chrome remembers devices this site was allowed to use; reconnect quietly to the last one. */
+  async resume(){
+    if(this.dev || !this.supported() || !navigator.bluetooth.getDevices) return false;
+    try{
+      const devs = await navigator.bluetooth.getDevices();
+      const d = devs.find(x => x.name && x.name === S.hrDevice) || (devs.length === 1 ? devs[0] : null);
+      if(!d) return false;
+      this.adopt(d);
+      await Promise.race([this.connect(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))]);
+      return true;
+    }catch(e){ this.state = this.dev ? 'lost' : 'none'; paintHr(); return false }
+  },
+  async connect(){
+    if(!this.dev) return;
+    this.state = 'connecting'; this.note = ''; paintHr();
+    const server = await this.dev.gatt.connect();
+    const ch = await (await server.getPrimaryService('heart_rate')).getCharacteristic('heart_rate_measurement');
+    ch.addEventListener('characteristicvaluechanged', HR.value);
+    await ch.startNotifications();
+    this.ch = ch; this.state = 'on'; this.tries = 0;
+    this.diag = {at:Date.now(), pkts:0, zeros:0, bpm:null, contact:null, resub:false};
+    paintHr();
+    ch.readValue().then(dv => HR.take(dv)).catch(() => {}); // most devices refuse a read, a few answer
+    setTimeout(() => HR.watchdog(ch), 12000);
+  },
+  value: ev => HR.take(ev.target.value),
+  take(dv){
+    if(!dv || dv.byteLength < 2) return;
+    const d = this.diag, bpm = parseHr(dv), contact = hrContact(dv);
+    d.pkts++; d.bpm = bpm; d.contact = contact;
+    if(!(bpm > 0) || contact === false){ d.zeros++; return } // a zero is "no skin contact", not a heart rate
+    this.feed(bpm);
+  },
+  /* Connected but silent: subscribe once more, since some watches only start after a second subscription. */
+  async watchdog(ch){
+    if(this.ch !== ch || this.state !== 'on' || this.diag.pkts || this.diag.resub) return;
+    this.diag.resub = true;
+    try{ await ch.stopNotifications(); await ch.startNotifications() }catch(e){}
+  },
+  /* Why there's no number, in words; null when there is one. */
+  why(){
+    if(this.state !== 'on' || this.avg(5) != null) return null;
+    const d = this.diag, secs = (Date.now() - d.at)/1000;
+    if(!d.pkts) return secs < 8 ? 'Waiting for the first reading…' : "Connected, but nothing received. The watch isn't broadcasting heart rate.";
+    if(d.contact === false || !(d.bpm > 0)) return 'Readings arriving but no pulse. Check the watch is snug on the wrist.';
+    return 'Readings stopped.';
+  },
+  lost: () => {
+    if(HR.ch) HR.ch.removeEventListener('characteristicvaluechanged', HR.value);
+    HR.ch = null; HR.state = 'lost'; paintHr(); HR.retry();
+  },
+  /* Three quiet retries on the same device, then it waits for the button. */
+  retry(){
+    if(!this.dev || this.tries >= 3) return;
+    const wait = 2000 * 2 ** this.tries++;
+    setTimeout(() => {
+      if(this.state !== 'lost' || !this.dev) return;
+      this.connect().catch(() => { this.state = 'lost'; paintHr(); this.retry() });
+    }, wait);
+  },
+  reconnect(){
+    if(!this.dev) return this.pick();
+    this.tries = 0;
+    this.connect().catch(() => { this.state = 'lost'; this.say('Still no heart rate. Check the strap is on, or the watch is broadcasting.') });
+  },
+  feed(bpm){
+    if(!(bpm > 0 && bpm < 250)) return;
+    const now = Date.now();
+    this.samples.push([now, bpm]);
+    while(this.samples.length && this.samples[0][0] < now - 120000) this.samples.shift();
+  },
+  /* Mean over the last `sec` seconds; null when the newest reading is stale. */
+  avg(sec){
+    const now = Date.now(), s = this.samples;
+    if(!s.length || now - s[s.length-1][0] > HR_FRESH*1000) return null;
+    const w = s.filter(x => x[0] >= now - sec*1000);
+    return w.length ? w.reduce((a,x) => a + x[1], 0)/w.length : null;
+  },
+  live(){ const v = this.avg(5); return v == null ? null : Math.round(v) },
+  say(msg){ this.note = msg; paintHr() },
+  forget(){
+    if(this.dev){
+      this.dev.removeEventListener('gattserverdisconnected', HR.lost);
+      try{ if(this.dev.gatt.connected) this.dev.gatt.disconnect() }catch(e){}
+    }
+    this.dev = null; this.ch = null; this.state = 'none'; this.samples = []; this.tries = 0;
+  }
+};
+function paintHr(){
+  const st = HR.state, bpm = HR.live();
+  $('#hrState').textContent = !HR.supported() ? 'No Bluetooth here'
+    : st === 'on' ? (bpm != null ? `${HR.name} · ${bpm} bpm` : HR.name)
+    : st === 'connecting' ? `Connecting to ${HR.name}…`
+    : st === 'lost' ? `${HR.name} · lost` : 'Not connected';
+  $('#hrWhy').textContent = !HR.supported() ? 'Bluetooth heart rate needs Chrome on Android. Pulse can still be typed in.'
+    : (HR.why() || HR.note || (st === 'lost' ? 'Tap Reconnect, or check the watch is still broadcasting.' : ''));
+  $('#hrPick').textContent = st === 'on' ? 'Change device' : st === 'lost' ? 'Reconnect' : 'Connect watch or strap';
+  $('#hrPick').disabled = $('#hrAll').disabled = !HR.supported();
+}
+$('#hrPick').onclick = () => HR.state === 'lost' ? HR.reconnect() : HR.pick(false);
+$('#hrAll').onclick = () => HR.pick(true);
+setInterval(() => { if(!$('#home').classList.contains('hidden')) paintHr() }, 1000);
+
 /* ================= measures: pulse + control pause ================= */
 function openSheet(html){ $('#sheetCard').innerHTML = html; $('#sheet').classList.remove('hidden'); return $('#sheetCard') }
 function closeSheet(){ $('#sheet').classList.add('hidden') }
 
 function askPulse(when){
   return new Promise(res => {
+    const watch = HR.state === 'on' || HR.state === 'connecting';
     const c = openSheet(`<h3>Pulse ${when}</h3>
-      <p>Beats in 60 seconds, from a watch or counted at your wrist.</p>
+      <p>${watch ? 'Filled in live from your watch (10-second average). Sit still for a few seconds, then save. Type over it to use your own count.'
+                 : 'Beats in 60 seconds, from a watch or counted at your wrist.'}</p>
+      ${watch ? '<div class="watchrow" id="hrW"></div>' : ''}
       <input class="num" id="hrIn" type="number" inputmode="numeric" min="30" max="220" placeholder="bpm">
-      <div class="btns"><button class="btn" id="hrT">60 s count</button><button class="btn pri" id="hrOk">Save</button></div>
+      <div class="btns">${watch ? '' : '<button class="btn" id="hrT">60 s count</button>'}<button class="btn pri" id="hrOk">Save</button></div>
       <button class="skip" id="hrSk">Skip</button>`);
-    let iv = null;
-    const done = v => { clearInterval(iv); closeSheet(); res(v) };
-    c.querySelector('#hrT').onclick = e => {
+    let iv = null, live = null, typed = false;
+    const inp = c.querySelector('#hrIn');
+    if(watch){
+      inp.addEventListener('input', () => { typed = true });
+      const tick = () => {
+        const v = HR.avg(10), w = c.querySelector('#hrW');
+        if(w) w.innerHTML = v != null ? `${esc(HR.name)} <b>${Math.round(v)} bpm</b>` : esc(HR.why() || `${HR.name}: waiting…`);
+        if(!typed && v != null) inp.value = Math.round(v);
+      };
+      tick(); live = setInterval(tick, 500);
+    }
+    const done = v => { clearInterval(iv); clearInterval(live); closeSheet(); res(v) };
+    if(!watch) c.querySelector('#hrT').onclick = e => {
       if(iv) return;
       const b = e.currentTarget, end = performance.now() + 60000;
       buzz(60);
@@ -331,7 +523,7 @@ function askPulse(when){
       tick(); iv = setInterval(tick, 250);
     };
     c.querySelector('#hrOk').onclick = () => {
-      const inp = c.querySelector('#hrIn'), v = parseInt(inp.value, 10);
+      const v = parseInt(inp.value, 10);
       if(!(v >= 30 && v <= 220)){ inp.classList.add('bad'); return }
       done(v);
     };
@@ -467,6 +659,7 @@ async function begin(m){
   if(S.check && m !== 'lockin') before = await ask('How wired are you?', 'Right now, before you start.');
   if(S.check && m === 'lockin') before = await ask('How settled are you?', 'Right now, before you lock in.');
   const measured = S.measure && (m === 'cooldown' || m === 'downshift');
+  if(m !== 'lockin' && !HR.dev && S.hrDevice) await HR.resume(); // quietly pick the watch back up if it was used before
   const pre = {};
   if(measured){ pre.hr = await askPulse('before'); pre.cp = await askCP('before') }
   $('#home').classList.add('hidden'); $('#stage').classList.remove('hidden');
@@ -474,7 +667,8 @@ async function begin(m){
   fit(); lockScreen();
   const mins = +(m==='downshift' ? S.dDown : m==='drift' ? S.dDrift : m==='cooldown' ? S.dCool : S.dLock);
   total = mins*60;
-  state = {before, measured, pre, hits:0, misses:0, falses:0, targets:[]};
+  state = {before, measured, pre, hits:0, misses:0, falses:0, targets:[], trace:[], traceAt:0};
+  $('#hrLive').textContent = '';
   ox.clearRect(0,0,W,H);
   if(m === 'cooldown'){
     state.ph = -1; state.phStart = 0; state.phLen = 3; state.phEnd = 3; // 3 s settle
@@ -525,10 +719,19 @@ async function finish(early){
       scene: mode==='cooldown' ? S.cScene : undefined,
       before:state.before, after, score,
       hrB: state.pre.hr ?? undefined, hrA: post.hr ?? undefined,
-      cpB: state.pre.cp ?? undefined, cpA: post.cp ?? undefined});
+      cpB: state.pre.cp ?? undefined, cpA: post.cp ?? undefined,
+      ...traceStats(state.trace)});
     store.set('log', log.slice(-500));
   }
   renderHist();
+}
+/* Watch trace summary: first and last 15 s of the session, the low point, and the 5 s series itself. */
+function traceStats(tr){
+  const ok = tr.filter(v => v != null);
+  if(ok.length < 3) return {};
+  const head = tr.slice(0,3).filter(v => v != null), tail = tr.slice(-3).filter(v => v != null);
+  const m = a => a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : undefined;
+  return {hrTrace: tr, hrStart: m(head), hrEnd: m(tail), hrMin: Math.min(...ok)};
 }
 $('#end').addEventListener('click', e => { e.stopPropagation(); finish(true) });
 
@@ -539,6 +742,13 @@ function frame(now){
   const left = total ? total - el : el;
   const mm = Math.floor(left/60), ss = Math.floor(left%60);
   $('#clock').textContent = `${mm}:${String(ss).padStart(2,'0')}`;
+  if(mode !== 'lockin' && HR.dev){
+    const bpm = HR.live();
+    const txt = bpm != null ? `♥ ${bpm}` : HR.state === 'on' ? '♥ –' : HR.state === 'lost' ? '♥ lost' : '';
+    if($('#hrLive').textContent !== txt) $('#hrLive').textContent = txt;
+    // a 5-second heart-rate trace for the log
+    if(el - state.traceAt >= 5){ state.traceAt = el; const v = HR.avg(5); state.trace.push(v == null ? null : Math.round(v)) }
+  }
   if(el > 8 && (mode === 'drift' || mode === 'lockin')) $('#cue').style.opacity = 0;
   if(mode === 'downshift') drawDown(el);
   else if(mode === 'drift') drawDrift(el);
@@ -875,7 +1085,8 @@ function drawLock(el){
 }
 
 /* ================= boot ================= */
-paintChips(); renderHist();
+paintChips(); renderHist(); paintHr();
+if(S.hrDevice) HR.resume();
 if('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>

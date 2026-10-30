@@ -13,6 +13,8 @@ Optional before/after check-ins (1 calm, 5 wired) log whether a session actually
 
 **Measures** (Downshift and Cool-down): pulse over 60 seconds (typed in, with an optional 60s count timer) and a control pause (breathe out normally, press and hold the circle, let go at the first urge; no timer shown, capped at 90s) before and after. The home screen's *Cool-down comparison* averages pulse drop and control-pause change per setup, so Cool-down · Silk can be compared against Downshift · Box over a few sessions.
 
+**Watch heart rate**: same approach as Ironlog's cardio, over Web Bluetooth's standard Heart Rate Service (Chrome on Android). Works with chest straps and any watch that broadcasts heart rate (Garmin, Polar, Coros and others; Wear OS via a broadcast app on the watch; not Apple Watch or Fitbit). Once connected, the pulse measure fills in live from a 10-second average, the session shows live bpm, and each Downshift or Cool-down session logs a 5-second trace with its low point. The last device is remembered and reconnected quietly.
+
 ## Design rules
 
 - No flicker or strobing. Every change is slow or a single soft colour shift.
