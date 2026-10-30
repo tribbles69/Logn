@@ -12,7 +12,7 @@
 <style>
 :root{
   --bg:#070b0d; --panel:#0e1518; --line:#1b272b; --text:#d6e2e0; --dim:#7d908e;
-  --teal:#5fb3a8; --teal2:#2f6f68; --amber:#e0a458; --violet:#8f86c9; --blue:#79a9d1;
+  --teal:#5fb3a8; --teal2:#2f6f68; --amber:#e0a458; --violet:#8f86c9; --blue:#79a9d1; --sage:#9cc488;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -62,6 +62,8 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 .result{font-size:15px;line-height:1.5;margin:0 0 14px}
 .num{width:130px;font:inherit;font-size:28px;text-align:center;background:var(--bg);border:1px solid var(--line);
   border-radius:14px;color:var(--text);padding:10px;font-variant-numeric:tabular-nums}
+.num::-webkit-inner-spin-button,.num::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.num{-moz-appearance:textfield}
 .num.bad{border-color:#a05a5a}
 .btns{display:flex;gap:10px;justify-content:center;margin:16px 0 14px}
 .btn{border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-size:15px;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -72,6 +74,30 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 .holdbtn.on{background:#13221f;color:var(--text)}
 .note{font-size:12px;color:var(--dim);margin:14px 0 10px;line-height:1.45}
 .big{font-size:44px;font-weight:300;margin:4px 0 6px;font-variant-numeric:tabular-nums}
+.hrbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-top:4px}
+.hrtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hrlbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.hrstate{font-size:14px;text-align:right;font-variant-numeric:tabular-nums}
+.hrwhy{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.4}
+.hrwhy:empty{display:none}
+.hrbtns{display:flex;gap:8px;margin-top:10px}
+.hrbtns .btn{padding:8px 14px;font-size:14px}
+.hrbtns .pri{flex:1}
+.hrhelp{margin-top:10px;font-size:13px;color:var(--dim);line-height:1.5}
+.hrhelp summary{cursor:pointer;font-size:13px}
+.hrhelp b{color:var(--text);font-weight:500}
+.watchrow{display:flex;align-items:center;justify-content:center;gap:10px;margin:-4px 0 14px;font-size:14px;color:var(--dim)}
+.watchrow b{color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+#hrLive{position:absolute;top:calc(env(safe-area-inset-top) + 36px);left:0;right:0;text-align:center;
+  font-size:13px;color:rgba(214,226,224,.28);font-variant-numeric:tabular-nums;pointer-events:none}
+#hrvStage{position:fixed;inset:0;background:#000;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
+#hvVid{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+#hv{width:100%;max-width:520px;height:30vh;display:block}
+#hvBig{font-size:56px;font-weight:300;margin-top:18px;font-variant-numeric:tabular-nums;color:var(--text)}
+#hvSub{color:var(--dim);font-size:15px;text-align:center;line-height:1.5;max-width:340px;margin-top:6px;min-height:46px}
+#hvAlt{margin-top:14px;border:1px solid var(--teal2);border-radius:999px;padding:10px 20px;font-size:14px;color:var(--text);background:#13221f}
+#hvCancel{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 26px);
+  padding:10px 22px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:rgba(214,226,224,.35);font-size:13px;letter-spacing:.15em}
 .cmpnote{color:var(--dim);font-size:12px;margin-top:8px;line-height:1.4}
 
 /* ---------- session ---------- */
@@ -168,11 +194,45 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
     <button class="go" data-start="lockin">Start Lock-in</button>
   </div>
 
+  <div class="mode" data-mode="hrv" style="--c:var(--sage)">
+    <span class="dot" style="background:var(--sage)"></span>
+    <h2>HRV check</h2>
+    <p>Resting heart-rate variability (RMSSD). Fingertip over the camera and flash, or beat-to-beat data from a strap or watch that sends it. Best first thing in the morning, sitting the same way each time.</p>
+    <div class="lbl">Source</div>
+    <div class="opts" data-group="hrvSrc">
+      <span class="chip" data-v="auto">Auto</span>
+      <span class="chip" data-v="camera">Camera</span>
+      <span class="chip" data-v="watch">Watch or strap</span>
+    </div>
+    <div class="lbl">Length</div>
+    <div class="opts" data-group="dHrv">
+      <span class="chip" data-v="1">1 min</span><span class="chip" data-v="2">2 min</span><span class="chip" data-v="3">3 min</span>
+    </div>
+    <button class="go" id="hrvGo">Start HRV check</button>
+  </div>
+
   <div class="row">
     <button class="toggle" id="tSound">Sound</button>
     <button class="toggle" id="tHaptic">Vibrate</button>
     <button class="toggle" id="tCheck">Check-ins</button>
     <button class="toggle" id="tMeasure">Measures</button>
+  </div>
+
+  <div class="hrbox">
+    <div class="hrtop"><span class="hrlbl">Heart rate</span><span id="hrState" class="hrstate">Not connected</span></div>
+    <div class="hrwhy" id="hrWhy"></div>
+    <div class="hrbtns">
+      <button class="btn pri" id="hrPick">Connect watch or strap</button>
+      <button class="btn" id="hrAll">Not listed?</button>
+    </div>
+    <details class="hrhelp"><summary>Using a smartwatch</summary>
+      <div>Turn on heart-rate broadcast on the watch first, then connect.
+      <br>• <b>Garmin</b>: hold the menu button, then Settings, Sensors (or Wrist Heart Rate), Broadcast Heart Rate.
+      <br>• <b>Polar, Coros, Suunto, Amazfit</b>: look for "HR broadcast" or "share heart rate" in the watch settings.
+      <br>• <b>Samsung Galaxy Watch, Wear OS</b>: the watch connects but sends nothing on its own. Install a heart-rate broadcast app on the watch (search the Play Store <i>on the watch</i> for "heart rate broadcast" or "HR BLE"), start it, then connect here. If nothing arrives, also start a workout on the watch.
+      <br>• <b>Apple Watch and Fitbit</b> can't send heart rate to a browser, so use a chest strap or arm band.
+      <br>If the watch doesn't appear, try <b>Not listed?</b>, which shows every nearby device.</div>
+    </details>
   </div>
 
   <div class="sec">Recent sessions</div>
@@ -188,10 +248,20 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 
 <div id="sheet" class="hidden"><div class="card" id="sheetCard"></div></div>
 
+<div id="hrvStage" class="hidden">
+  <video id="hvVid" playsinline muted></video>
+  <canvas id="hv"></canvas>
+  <div id="hvBig"></div>
+  <div id="hvSub"></div>
+  <button id="hvAlt" class="hidden"></button>
+  <button id="hvCancel">CANCEL</button>
+</div>
+
 <div id="stage" class="hidden">
   <canvas id="cv"></canvas>
   <canvas id="ov"></canvas>
   <div id="clock"></div>
+  <div id="hrLive"></div>
   <div id="cue"></div>
   <button id="end">END</button>
 </div>
@@ -204,7 +274,7 @@ const store = {
   set(k, v){ try{ localStorage.setItem('logn.'+k, JSON.stringify(v)) }catch(e){} }
 };
 const S = Object.assign({scene:'cycle', pattern:'calm', dDown:'5', dDrift:'10', dLock:'3', sound:true, haptic:true, check:true,
-  cPattern:'box4', cScene:'silk', dCool:'5', measure:true}, store.get('settings', {}));
+  cPattern:'box4', cScene:'silk', dCool:'5', measure:true, hrvSrc:'auto', dHrv:'1'}, store.get('settings', {}));
 const saveS = () => store.set('settings', S);
 
 /* ================= home UI ================= */
@@ -228,9 +298,9 @@ $('#tSound').onclick = () => { S.sound = !S.sound; saveS(); paintChips() };
 $('#tHaptic').onclick = () => { S.haptic = !S.haptic; saveS(); paintChips(); if(S.haptic) buzz(30) };
 $('#tCheck').onclick = () => { S.check = !S.check; saveS(); paintChips() };
 $('#tMeasure').onclick = () => { S.measure = !S.measure; saveS(); paintChips() };
-$$('.go').forEach(b => b.addEventListener('click', () => begin(b.dataset.start)));
+$$('.go[data-start]').forEach(b => b.addEventListener('click', () => begin(b.dataset.start)));
 
-const NAMES = {downshift:'Downshift', drift:'Drift', lockin:'Lock-in', cooldown:'Cool-down'};
+const NAMES = {downshift:'Downshift', drift:'Drift', lockin:'Lock-in', cooldown:'Cool-down', hrv:'HRV check'};
 const SCENE_NAMES = {silk:'Silk', aurora:'Aurora', mandala:'Mandala', nebula:'Nebula', stars:'Stars'};
 const PAT_NAMES = {calm:'4/6', long:'4/8', sigh:'Double sigh', box:'Box', box4:'Box', ease:'Box ease-in'};
 const hasHr = s => s.hrB != null && s.hrA != null;
@@ -249,9 +319,11 @@ function renderHist(){
     const d = new Date(s.ts);
     const when = d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     let right = Math.round(s.secs/60)+' min';
+    if(s.mode === 'hrv') right = `<span class="delta">${Math.round(s.rmssd)} ms</span> · ♥ ${s.hrAvg} · ${s.src === 'camera' ? 'camera' : 'watch'}${s.cleanPct < 80 ? ' · rough' : ''}`;
     if(s.before && s.after){ right += ` · <span class="delta">${s.before}→${s.after}</span>` }
     if(hasHr(s)) right += ` · <span class="delta">♥ ${s.hrB}→${s.hrA}</span>`;
     if(hasCp(s)) right += ` · <span class="delta">CP ${s.cpB}→${s.cpA}s</span>`;
+    if(s.hrMin != null) right += ` · <span class="delta">low ${s.hrMin}</span>`;
     if(s.score != null) right += ` · ${s.score}%`;
     return `<div class="h"><span>${sessLabel(s)}<br><small>${when}</small></span><small style="text-align:right">${right}</small></div>`;
   }).join('');
@@ -306,20 +378,429 @@ function showResult(html){
   });
 }
 
+/* ================= heart rate over Web Bluetooth (standard Heart Rate Service) =================
+   Same approach as Ironlog's cardio: chest straps and watches that broadcast HR. */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function parseHr(dv){ const f = dv.getUint8(0); return f & 1 ? dv.getUint16(1, true) : dv.getUint8(1) }
+/* Flags bits 1–2: bit 2 = the device reports skin contact, bit 1 = contact now. */
+/* RR intervals (flag bit 4), in 1/1024 s, after the HR value and the optional energy field (flag bit 3). */
+function rrParse(dv){
+  const f = dv.getUint8(0); if(!(f & 16)) return [];
+  let i = f & 1 ? 3 : 2; if(f & 8) i += 2;
+  const out = []; for(; i + 1 < dv.byteLength; i += 2) out.push(dv.getUint16(i, true) * 1000/1024);
+  return out;
+}
+function hrContact(dv){ const f = dv.getUint8(0); return f & 4 ? !!(f & 2) : null }
+const HR_FRESH = 6; // seconds before a reading counts as stale
+const HR = {
+  dev:null, ch:null, state:'none', name:'', samples:[], tries:0, note:'', rr:[], rrAt:0,
+  diag:{at:0, pkts:0, zeros:0, bpm:null, contact:null, resub:false},
+  supported(){ return !!(navigator.bluetooth && navigator.bluetooth.requestDevice) },
+  /* A strap advertises the Heart Rate service and shows up with the filter. A watch only
+     does once broadcast is on, and some don't advertise it at all, so `all` lists everything. */
+  async pick(all){
+    if(!this.supported()) return this.say('Bluetooth heart rate needs Chrome on Android.');
+    let dev;
+    try{
+      dev = await navigator.bluetooth.requestDevice(all
+        ? {acceptAllDevices:true, optionalServices:['heart_rate']}
+        : {filters:[{services:['heart_rate']}]});
+    }catch(e){
+      if(e && e.name !== 'NotFoundError') this.say(`Couldn't open the device list: ${(e && e.message) || 'unknown error'}`); // NotFound = picker cancelled
+      return;
+    }
+    this.adopt(dev);
+    try{ await this.connect() }
+    catch(e){
+      this.state = 'lost';
+      this.say(e && e.name === 'NotFoundError'
+        ? `${this.name} isn't sending heart rate. Turn on heart-rate broadcast on the watch, then try again.`
+        : `Couldn't connect to ${this.name}: ${(e && e.message) || 'unknown error'}`);
+    }
+  },
+  adopt(dev){
+    this.forget();
+    this.dev = dev; this.name = dev.name || 'Heart-rate device';
+    dev.addEventListener('gattserverdisconnected', HR.lost);
+    S.hrDevice = this.name; saveS(); // remembered, so next time it reconnects without the picker
+  },
+  /* Chrome remembers devices this site was allowed to use; reconnect quietly to the last one. */
+  async resume(){
+    if(this.dev || !this.supported() || !navigator.bluetooth.getDevices) return false;
+    try{
+      const devs = await navigator.bluetooth.getDevices();
+      const d = devs.find(x => x.name && x.name === S.hrDevice) || (devs.length === 1 ? devs[0] : null);
+      if(!d) return false;
+      this.adopt(d);
+      await Promise.race([this.connect(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))]);
+      return true;
+    }catch(e){ this.state = this.dev ? 'lost' : 'none'; paintHr(); return false }
+  },
+  async connect(){
+    if(!this.dev) return;
+    this.state = 'connecting'; this.note = ''; paintHr();
+    const server = await this.dev.gatt.connect();
+    const ch = await (await server.getPrimaryService('heart_rate')).getCharacteristic('heart_rate_measurement');
+    ch.addEventListener('characteristicvaluechanged', HR.value);
+    await ch.startNotifications();
+    this.ch = ch; this.state = 'on'; this.tries = 0;
+    this.diag = {at:Date.now(), pkts:0, zeros:0, bpm:null, contact:null, resub:false};
+    paintHr();
+    ch.readValue().then(dv => HR.take(dv)).catch(() => {}); // most devices refuse a read, a few answer
+    setTimeout(() => HR.watchdog(ch), 12000);
+  },
+  value: ev => HR.take(ev.target.value),
+  take(dv){
+    if(!dv || dv.byteLength < 2) return;
+    const d = this.diag, bpm = parseHr(dv), contact = hrContact(dv);
+    d.pkts++; d.bpm = bpm; d.contact = contact;
+    if(!(bpm > 0) || contact === false){ d.zeros++; return } // a zero is "no skin contact", not a heart rate
+    this.feed(bpm);
+    const rr = rrParse(dv); // beat-to-beat intervals, when the device sends them (straps do; many watch broadcast apps don't)
+    if(rr.length){
+      const now = Date.now(); this.rrAt = now;
+      rr.forEach(v => this.rr.push([now, v]));
+      while(this.rr.length && this.rr[0][0] < now - 600000) this.rr.shift();
+    }
+  },
+  /* Connected but silent: subscribe once more, since some watches only start after a second subscription. */
+  async watchdog(ch){
+    if(this.ch !== ch || this.state !== 'on' || this.diag.pkts || this.diag.resub) return;
+    this.diag.resub = true;
+    try{ await ch.stopNotifications(); await ch.startNotifications() }catch(e){}
+  },
+  /* Why there's no number, in words; null when there is one. */
+  why(){
+    if(this.state !== 'on' || this.avg(5) != null) return null;
+    const d = this.diag, secs = (Date.now() - d.at)/1000;
+    if(!d.pkts) return secs < 8 ? 'Waiting for the first reading…' : "Connected, but nothing received. The watch isn't broadcasting heart rate.";
+    if(d.contact === false || !(d.bpm > 0)) return 'Readings arriving but no pulse. Check the watch is snug on the wrist.';
+    return 'Readings stopped.';
+  },
+  lost: () => {
+    if(HR.ch) HR.ch.removeEventListener('characteristicvaluechanged', HR.value);
+    HR.ch = null; HR.state = 'lost'; paintHr(); HR.retry();
+  },
+  /* Three quiet retries on the same device, then it waits for the button. */
+  retry(){
+    if(!this.dev || this.tries >= 3) return;
+    const wait = 2000 * 2 ** this.tries++;
+    setTimeout(() => {
+      if(this.state !== 'lost' || !this.dev) return;
+      this.connect().catch(() => { this.state = 'lost'; paintHr(); this.retry() });
+    }, wait);
+  },
+  reconnect(){
+    if(!this.dev) return this.pick();
+    this.tries = 0;
+    this.connect().catch(() => { this.state = 'lost'; this.say('Still no heart rate. Check the strap is on, or the watch is broadcasting.') });
+  },
+  feed(bpm){
+    if(!(bpm > 0 && bpm < 250)) return;
+    const now = Date.now();
+    this.samples.push([now, bpm]);
+    while(this.samples.length && this.samples[0][0] < now - 120000) this.samples.shift();
+  },
+  /* Mean over the last `sec` seconds; null when the newest reading is stale. */
+  avg(sec){
+    const now = Date.now(), s = this.samples;
+    if(!s.length || now - s[s.length-1][0] > HR_FRESH*1000) return null;
+    const w = s.filter(x => x[0] >= now - sec*1000);
+    return w.length ? w.reduce((a,x) => a + x[1], 0)/w.length : null;
+  },
+  live(){ const v = this.avg(5); return v == null ? null : Math.round(v) },
+  say(msg){ this.note = msg; paintHr() },
+  forget(){
+    if(this.dev){
+      this.dev.removeEventListener('gattserverdisconnected', HR.lost);
+      try{ if(this.dev.gatt.connected) this.dev.gatt.disconnect() }catch(e){}
+    }
+    this.dev = null; this.ch = null; this.state = 'none'; this.samples = []; this.tries = 0; this.rr = []; this.rrAt = 0;
+  }
+};
+function paintHr(){
+  const st = HR.state, bpm = HR.live();
+  $('#hrState').textContent = !HR.supported() ? 'No Bluetooth here'
+    : st === 'on' ? (bpm != null ? `${HR.name} · ${bpm} bpm` : HR.name)
+    : st === 'connecting' ? `Connecting to ${HR.name}…`
+    : st === 'lost' ? `${HR.name} · lost` : 'Not connected';
+  $('#hrWhy').textContent = !HR.supported() ? 'Bluetooth heart rate needs Chrome on Android. Pulse can still be typed in.'
+    : (HR.why() || HR.note || (st === 'lost' ? 'Tap Reconnect, or check the watch is still broadcasting.' : ''));
+  $('#hrPick').textContent = st === 'on' ? 'Change device' : st === 'lost' ? 'Reconnect' : 'Connect watch or strap';
+  $('#hrPick').disabled = $('#hrAll').disabled = !HR.supported();
+}
+$('#hrPick').onclick = () => HR.state === 'lost' ? HR.reconnect() : HR.pick(false);
+$('#hrAll').onclick = () => HR.pick(true);
+setInterval(() => { if(!$('#home').classList.contains('hidden')) paintHr() }, 1000);
+
+/* ================= HRV check =================
+   RMSSD from beat-to-beat intervals. Two sources:
+   - camera: fingertip over the rear camera with the torch on (photoplethysmography). Each frame's mean red
+     level dips as blood pulses in; peaks are found offline on the whole recording, refined between frames.
+   - watch or strap: RR intervals straight from the Bluetooth Heart Rate Service, when the device sends them. */
+const median = a => { if(!a.length) return NaN; const s = [...a].sort((x,y)=>x-y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1]+s[m])/2 };
+
+/* Clean an RR series (ms) and compute RMSSD. A beat is kept when it's 300–2000 ms and within 20% of the
+   local median; successive differences only count between two kept, adjacent beats. */
+function hrvFromRR(rr){
+  const inR = v => v >= 300 && v <= 2000;
+  const ok = rr.map((v,i) => {
+    if(!inR(v)) return false;
+    const m = median(rr.slice(Math.max(0,i-4), i+5).filter(inR));
+    return Math.abs(v - m)/m < .2;
+  });
+  const d = []; for(let i=1;i<rr.length;i++) if(ok[i] && ok[i-1]) d.push(rr[i] - rr[i-1]);
+  const good = rr.filter((v,i) => ok[i]);
+  const clean = rr.length ? good.length/rr.length : 0;
+  if(d.length < 15) return {err:`Only ${d.length} clean beat pairs. It needs at least 15.`, beats:rr.length, clean};
+  const rmssd = Math.sqrt(d.reduce((a,x)=>a+x*x,0)/d.length);
+  const hr = 60000/(good.reduce((a,x)=>a+x,0)/good.length);
+  return {rmssd, hr, beats:rr.length, pairs:d.length, clean};
+}
+
+/* PPG: detrend (centred 1.2 s mean), light smoothing, then peaks at least 250 ms clear of a bigger neighbour
+   and 300 ms apart, refined with a parabola through the frame on each side. Returns {y, peaks:[ms]}. */
+function ppgProcess(T, V){
+  const n = V.length; if(n < 20) return {y:[], peaks:[]};
+  const dt = (T[n-1] - T[0])/(n-1) || 33;
+  const half = Math.max(2, Math.round(600/dt));
+  const P = [0]; for(const v of V) P.push(P[P.length-1] + v);
+  const x = V.map((v,i) => { const a = Math.max(0,i-half), b = Math.min(n,i+half+1); return -(v - (P[b]-P[a])/(b-a)) });
+  const y = x.map((v,i) => (x[Math.max(0,i-1)] + v + x[Math.min(n-1,i+1)])/3);
+  const k = Math.max(2, Math.round(250/dt)), floor = median(y.map(Math.abs)) * .5;
+  const peaks = [], vals = [];
+  for(let i=k;i<n-k;i++){
+    const v = y[i]; if(v <= floor) continue;
+    let top = true; for(let j=i-k;j<=i+k;j++) if(y[j] > v || (y[j] === v && j < i)){ top = false; break }
+    if(!top) continue;
+    const a = y[i-1], b = y[i+1], den = a - 2*v + b;
+    const t = T[i] + (den ? .5*(a-b)/den : 0) * (T[i+1]-T[i-1])/2;
+    if(peaks.length && t - peaks[peaks.length-1] < 300){ if(v > vals[vals.length-1]){ peaks[peaks.length-1] = t; vals[vals.length-1] = v } continue }
+    peaks.push(t); vals.push(v);
+  }
+  return {y, peaks};
+}
+
+const HV = {on:false};
+const hvCv = $('#hv'), hx = hvCv.getContext('2d');
+const hvSay = (big, sub) => { $('#hvBig').textContent = big; $('#hvSub').textContent = sub || '' };
+function hvAlt(label, fn){ const b = $('#hvAlt'); if(!label){ b.classList.add('hidden'); return } b.textContent = label; b.onclick = fn; b.classList.remove('hidden') }
+
+async function hrvBegin(){
+  const watchRR = HR.state === 'on' && Date.now() - HR.rrAt < 10000;
+  let src = S.hrvSrc === 'auto' ? (watchRR ? 'watch' : 'camera') : S.hrvSrc;
+  if(src === 'watch' && !HR.dev && S.hrDevice) await HR.resume();
+  const ok = await hrvIntro(src);
+  if(!ok) return;
+  hrvStart(src);
+}
+function hrvIntro(src){
+  return new Promise(res => {
+    const c = openSheet(`<h3>HRV check</h3>
+      <p class="result" style="text-align:left">${src === 'camera'
+        ? 'Rest a fingertip lightly over the rear camera and flash. Cover them fully but don\'t press hard: pressing squeezes the signal out.<br><br>Sit, rest your hand on your leg or a table, keep still and breathe normally.'
+        : `Using beat-to-beat data from ${esc(HR.name || 'your watch or strap')}.<br><br>Sit, keep still and breathe normally.`}</p>
+      <div class="note">Compare like with like: same time of day and position each check. First thing on waking is the standard.</div>
+      <div class="btns"><button class="btn" id="hvNo">Cancel</button><button class="btn pri" id="hvYes">Start</button></div>`);
+    c.querySelector('#hvYes').onclick = () => { closeSheet(); res(true) };
+    c.querySelector('#hvNo').onclick = () => { closeSheet(); res(false) };
+  });
+}
+
+async function hrvStart(src){
+  Object.assign(HV, {on:true, src, dur:+S.dHrv*60, T:[], V:[], phase:'wait', phaseAt:performance.now(), offAt:0, stream:null, torch:false, rr0:0, t0:0});
+  $('#home').classList.add('hidden'); $('#hrvStage').classList.remove('hidden'); hvAlt(null);
+  try{ await document.documentElement.requestFullscreen?.({navigationUI:'hide'}) }catch(e){}
+  lockScreen(); hvFit();
+  if(src === 'camera'){
+    hvSay('', 'Starting the camera…');
+    try{
+      const st = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:320}, height:{ideal:240}, frameRate:{ideal:30}}});
+      HV.stream = st;
+      const tr = st.getVideoTracks()[0];
+      try{ await tr.applyConstraints({advanced:[{torch:true}]}); HV.torch = !!(tr.getSettings && tr.getSettings().torch) }catch(e){}
+      const v = $('#hvVid'); v.srcObject = st; await v.play();
+      HV.grab = document.createElement('canvas'); HV.grab.width = 32; HV.grab.height = 24;
+      HV.gx = HV.grab.getContext('2d', {willReadFrequently:true});
+      hrvFrameLoop();
+    }catch(e){
+      hvSay('No camera', e && e.name === 'NotAllowedError' ? 'Camera permission was refused. Allow it for this site to use the fingertip check.' : `Couldn't open the camera: ${(e && e.message) || 'unknown error'}`);
+      if(HR.state === 'on') hvAlt('Use the watch or strap instead', () => { hrvStop(); hrvStart('watch') });
+      return;
+    }
+  } else {
+    if(HR.state !== 'on'){ hvSay('No device', 'Connect your watch or strap on the home screen first.'); hvAlt('Use the camera instead', () => { hrvStop(); hrvStart('camera') }); return }
+    HV.phase = 'settle'; HV.phaseAt = performance.now();
+    hrvWatchLoop();
+  }
+}
+
+/* ---- camera path ---- */
+function hrvFrameLoop(){
+  const v = $('#hvVid');
+  const onFrame = (now, meta) => {
+    if(!HV.on) return;
+    const t = (meta && meta.captureTime) || now;
+    HV.gx.drawImage(v, 0, 0, 32, 24);
+    const d = HV.gx.getImageData(0, 0, 32, 24).data;
+    let r = 0, g = 0; for(let i=0;i<d.length;i+=4){ r += d[i]; g += d[i+1] }
+    r /= d.length/4; g /= d.length/4;
+    hrvCamSample(t, r, g);
+    v.requestVideoFrameCallback ? v.requestVideoFrameCallback(onFrame) : requestAnimationFrame(n => onFrame(n));
+  };
+  v.requestVideoFrameCallback ? v.requestVideoFrameCallback(onFrame) : requestAnimationFrame(n => onFrame(n));
+}
+const SETTLE = 5; // seconds of fingertip before recording, while the camera's exposure settles
+function hrvCamSample(t, r, g){
+  const now = performance.now();
+  const finger = r > 60 && r > g * 1.5;
+  if(!finger){
+    if(!HV.offAt) HV.offAt = now;
+    if(HV.phase !== 'wait' && now - HV.offAt > 1200){ HV.phase = 'wait'; HV.T = []; HV.V = []; buzz([20,60,20]) }
+    if(HV.phase === 'wait') hvSay('', HV.torch ? 'Cover the camera and flash with a fingertip.' : 'Cover the camera with a fingertip. No torch on this phone, so use a bright room or a lamp behind your finger.');
+    hrvDraw(); return;
+  }
+  HV.offAt = 0;
+  if(HV.phase === 'wait'){ HV.phase = 'settle'; HV.phaseAt = now; HV.T = []; HV.V = [] }
+  HV.T.push(t); HV.V.push(r);
+  if(HV.phase === 'settle'){
+    const left = SETTLE - (now - HV.phaseAt)/1000;
+    hvSay('', `Hold still… starting in ${Math.ceil(left)}`);
+    if(left <= 0){ HV.phase = 'rec'; HV.phaseAt = now; HV.T = []; HV.V = []; buzz(40) }
+  } else if(HV.phase === 'rec'){
+    const el = (now - HV.phaseAt)/1000, left = HV.dur - el;
+    if(left <= 0) return hrvFinish();
+    const w = hvWindow(8000), p = ppgProcess(w.T, w.V).peaks;
+    const rr = p.slice(1).map((x,i) => x - p[i]), bpm = rr.length > 2 ? Math.round(60000/median(rr)) : null;
+    $('#hvBig').textContent = `${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')}`;
+    $('#hvSub').textContent = bpm ? `♥ ${bpm} · keep still` : 'Finding your pulse… keep still';
+  }
+  hrvDraw();
+}
+function hvWindow(ms){
+  const T = HV.T, end = T[T.length-1]; let i = T.length - 1;
+  while(i > 0 && T[i-1] >= end - ms) i--;
+  return {T:T.slice(i), V:HV.V.slice(i)};
+}
+
+/* ---- watch path ---- */
+function hrvWatchLoop(){
+  if(!HV.on) return;
+  const now = performance.now();
+  if(HV.phase === 'settle'){
+    const left = 3 - (now - HV.phaseAt)/1000;
+    hvSay('', `Hold still… starting in ${Math.ceil(Math.max(0,left))}`);
+    if(left <= 0){ HV.phase = 'rec'; HV.phaseAt = now; HV.t0 = Date.now(); buzz(40) }
+  } else {
+    const el = (now - HV.phaseAt)/1000, left = HV.dur - el;
+    if(left <= 0) return hrvFinish();
+    $('#hvBig').textContent = `${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')}`;
+    const got = HR.rr.filter(x => x[0] >= HV.t0).length;
+    if(el > 10 && !got){
+      $('#hvSub').textContent = `No beat-to-beat data from ${HR.name}. Many watch broadcast apps send heart rate only.`;
+      hvAlt('Use the camera instead', () => { hrvStop(); hrvStart('camera') });
+    } else {
+      const bpm = HR.live();
+      $('#hvSub').textContent = `${bpm ? `♥ ${bpm} · ` : ''}${got} beats · keep still`;
+    }
+  }
+  hrvDraw();
+  HV.raf = requestAnimationFrame(hrvWatchLoop);
+}
+
+/* ---- drawing: pulse wave (camera) or beat-interval line (watch) ---- */
+function hvFit(){ const r = hvCv.getBoundingClientRect(), d = Math.min(devicePixelRatio||1, 2); hvCv.width = r.width*d; hvCv.height = r.height*d; hx.setTransform(d,0,0,d,0,0) }
+function hrvDraw(){
+  const w = hvCv.clientWidth, h = hvCv.clientHeight;
+  hx.clearRect(0,0,w,h);
+  hx.strokeStyle = 'rgba(156,196,136,.08)'; hx.lineWidth = 1; hx.beginPath(); hx.moveTo(0,h/2); hx.lineTo(w,h/2); hx.stroke();
+  let pts = [], ticks = [];
+  if(HV.src === 'camera' && HV.T.length > 20){
+    const win = hvWindow(5000), p = ppgProcess(win.T, win.V), t0 = win.T[0], span = win.T[win.T.length-1] - t0 || 1;
+    const amp = Math.max(...p.y.map(Math.abs)) || 1;
+    pts = p.y.map((v,i) => [ (win.T[i]-t0)/span*w, h/2 - v/amp*h*.42 ]);
+    ticks = p.peaks.map(t => (t - t0)/span*w);
+  } else if(HV.src === 'watch'){
+    const rr = HR.rr.filter(x => x[0] >= (HV.t0 || Date.now())).map(x => x[1]).slice(-40);
+    if(rr.length > 1){
+      const lo = Math.min(...rr) - 20, hi = Math.max(...rr) + 20;
+      pts = rr.map((v,i) => [ i/(rr.length-1)*w, h - (v-lo)/(hi-lo)*h ]);
+    }
+  }
+  if(pts.length > 1){
+    hx.strokeStyle = 'rgba(156,196,136,.85)'; hx.lineWidth = 2; hx.lineJoin = 'round';
+    hx.beginPath(); pts.forEach(([x,y],i) => i ? hx.lineTo(x,y) : hx.moveTo(x,y)); hx.stroke();
+  }
+  hx.fillStyle = 'rgba(214,226,224,.45)';
+  ticks.forEach(x => hx.fillRect(x-1, h-8, 2, 8));
+}
+
+function hrvStop(){
+  HV.on = false; cancelAnimationFrame(HV.raf);
+  if(HV.stream){ HV.stream.getTracks().forEach(t => { try{ t.stop() }catch(e){} }); HV.stream = null }
+  const v = $('#hvVid'); v.srcObject = null;
+  try{ wakeLock && wakeLock.release(); wakeLock = null }catch(e){}
+}
+function hrvExit(){
+  hrvStop(); hvAlt(null);
+  try{ document.fullscreenElement && document.exitFullscreen() }catch(e){}
+  $('#hrvStage').classList.add('hidden'); $('#home').classList.remove('hidden');
+}
+$('#hvCancel').onclick = hrvExit;
+$('#hrvGo').onclick = hrvBegin;
+addEventListener('resize', () => { if(HV.on) hvFit() });
+
+async function hrvFinish(){
+  const src = HV.src, secs = HV.dur;
+  let rr;
+  if(src === 'camera'){ const p = ppgProcess(HV.T, HV.V).peaks; rr = p.slice(1).map((x,i) => x - p[i]) }
+  else rr = HR.rr.filter(x => x[0] >= HV.t0).map(x => x[1]);
+  const r = hrvFromRR(rr);
+  hrvExit(); buzz([60,80,60]);
+  const log = store.get('log', []);
+  const prev = log.filter(s => s.mode === 'hrv' && s.rmssd).slice(-7);
+  if(r.err){
+    await showResult(`<h3>Not enough clean beats</h3><p class="result">${r.err} ${Math.round(r.clean*100)}% of ${r.beats} beats were clean.<br>${src === 'camera'
+      ? 'Keep your hand still, cover the lens fully and press lightly.' : 'Check the strap is snug and keep still.'}</p>`);
+    return;
+  }
+  const base = prev.length ? prev.reduce((a,s)=>a+s.rmssd,0)/prev.length : null;
+  const vs = base ? ` Your average over the last ${prev.length} check${prev.length>1?'s':''} is ${Math.round(base)} ms.` : ' This is your first reading, so it becomes your baseline.';
+  const shaky = r.clean < .8 ? '<br><span style="color:var(--amber)">A lot of beats were thrown out, so treat this one loosely.</span>' : '';
+  await showResult(`<h3>HRV</h3><div class="big">${Math.round(r.rmssd)} ms</div>
+    <p class="result">RMSSD · resting ${Math.round(r.hr)} bpm · ${r.pairs} beat pairs, ${Math.round(r.clean*100)}% clean · ${src === 'camera' ? 'camera' : esc(HR.name)}.${vs}${shaky}</p>`);
+  log.push({ts:Date.now(), mode:'hrv', secs, src, rmssd:+r.rmssd.toFixed(1), hrAvg:Math.round(r.hr), beats:r.beats, cleanPct:Math.round(r.clean*100)});
+  store.set('log', log.slice(-500));
+  renderHist();
+}
+
 /* ================= measures: pulse + control pause ================= */
 function openSheet(html){ $('#sheetCard').innerHTML = html; $('#sheet').classList.remove('hidden'); return $('#sheetCard') }
 function closeSheet(){ $('#sheet').classList.add('hidden') }
 
 function askPulse(when){
   return new Promise(res => {
+    const watch = HR.state === 'on' || HR.state === 'connecting';
     const c = openSheet(`<h3>Pulse ${when}</h3>
-      <p>Beats in 60 seconds, from a watch or counted at your wrist.</p>
+      <p>${watch ? 'Filled in live from your watch (10-second average). Sit still for a few seconds, then save. Type over it to use your own count.'
+                 : 'Beats in 60 seconds, from a watch or counted at your wrist.'}</p>
+      ${watch ? '<div class="watchrow" id="hrW"></div>' : ''}
       <input class="num" id="hrIn" type="number" inputmode="numeric" min="30" max="220" placeholder="bpm">
-      <div class="btns"><button class="btn" id="hrT">60 s count</button><button class="btn pri" id="hrOk">Save</button></div>
+      <div class="btns">${watch ? '' : '<button class="btn" id="hrT">60 s count</button>'}<button class="btn pri" id="hrOk">Save</button></div>
       <button class="skip" id="hrSk">Skip</button>`);
-    let iv = null;
-    const done = v => { clearInterval(iv); closeSheet(); res(v) };
-    c.querySelector('#hrT').onclick = e => {
+    let iv = null, live = null, typed = false;
+    const inp = c.querySelector('#hrIn');
+    if(watch){
+      inp.addEventListener('input', () => { typed = true });
+      const tick = () => {
+        const v = HR.avg(10), w = c.querySelector('#hrW');
+        if(w) w.innerHTML = v != null ? `${esc(HR.name)} <b>${Math.round(v)} bpm</b>` : esc(HR.why() || `${HR.name}: waiting…`);
+        if(!typed && v != null) inp.value = Math.round(v);
+      };
+      tick(); live = setInterval(tick, 500);
+    }
+    const done = v => { clearInterval(iv); clearInterval(live); closeSheet(); res(v) };
+    if(!watch) c.querySelector('#hrT').onclick = e => {
       if(iv) return;
       const b = e.currentTarget, end = performance.now() + 60000;
       buzz(60);
@@ -331,7 +812,7 @@ function askPulse(when){
       tick(); iv = setInterval(tick, 250);
     };
     c.querySelector('#hrOk').onclick = () => {
-      const inp = c.querySelector('#hrIn'), v = parseInt(inp.value, 10);
+      const v = parseInt(inp.value, 10);
       if(!(v >= 30 && v <= 220)){ inp.classList.add('bad'); return }
       done(v);
     };
@@ -467,6 +948,7 @@ async function begin(m){
   if(S.check && m !== 'lockin') before = await ask('How wired are you?', 'Right now, before you start.');
   if(S.check && m === 'lockin') before = await ask('How settled are you?', 'Right now, before you lock in.');
   const measured = S.measure && (m === 'cooldown' || m === 'downshift');
+  if(m !== 'lockin' && !HR.dev && S.hrDevice) await HR.resume(); // quietly pick the watch back up if it was used before
   const pre = {};
   if(measured){ pre.hr = await askPulse('before'); pre.cp = await askCP('before') }
   $('#home').classList.add('hidden'); $('#stage').classList.remove('hidden');
@@ -474,7 +956,8 @@ async function begin(m){
   fit(); lockScreen();
   const mins = +(m==='downshift' ? S.dDown : m==='drift' ? S.dDrift : m==='cooldown' ? S.dCool : S.dLock);
   total = mins*60;
-  state = {before, measured, pre, hits:0, misses:0, falses:0, targets:[]};
+  state = {before, measured, pre, hits:0, misses:0, falses:0, targets:[], trace:[], traceAt:0};
+  $('#hrLive').textContent = '';
   ox.clearRect(0,0,W,H);
   if(m === 'cooldown'){
     state.ph = -1; state.phStart = 0; state.phLen = 3; state.phEnd = 3; // 3 s settle
@@ -525,10 +1008,19 @@ async function finish(early){
       scene: mode==='cooldown' ? S.cScene : undefined,
       before:state.before, after, score,
       hrB: state.pre.hr ?? undefined, hrA: post.hr ?? undefined,
-      cpB: state.pre.cp ?? undefined, cpA: post.cp ?? undefined});
+      cpB: state.pre.cp ?? undefined, cpA: post.cp ?? undefined,
+      ...traceStats(state.trace)});
     store.set('log', log.slice(-500));
   }
   renderHist();
+}
+/* Watch trace summary: first and last 15 s of the session, the low point, and the 5 s series itself. */
+function traceStats(tr){
+  const ok = tr.filter(v => v != null);
+  if(ok.length < 3) return {};
+  const head = tr.slice(0,3).filter(v => v != null), tail = tr.slice(-3).filter(v => v != null);
+  const m = a => a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : undefined;
+  return {hrTrace: tr, hrStart: m(head), hrEnd: m(tail), hrMin: Math.min(...ok)};
 }
 $('#end').addEventListener('click', e => { e.stopPropagation(); finish(true) });
 
@@ -539,6 +1031,13 @@ function frame(now){
   const left = total ? total - el : el;
   const mm = Math.floor(left/60), ss = Math.floor(left%60);
   $('#clock').textContent = `${mm}:${String(ss).padStart(2,'0')}`;
+  if(mode !== 'lockin' && HR.dev){
+    const bpm = HR.live();
+    const txt = bpm != null ? `♥ ${bpm}` : HR.state === 'on' ? '♥ –' : HR.state === 'lost' ? '♥ lost' : '';
+    if($('#hrLive').textContent !== txt) $('#hrLive').textContent = txt;
+    // a 5-second heart-rate trace for the log
+    if(el - state.traceAt >= 5){ state.traceAt = el; const v = HR.avg(5); state.trace.push(v == null ? null : Math.round(v)) }
+  }
   if(el > 8 && (mode === 'drift' || mode === 'lockin')) $('#cue').style.opacity = 0;
   if(mode === 'downshift') drawDown(el);
   else if(mode === 'drift') drawDrift(el);
@@ -875,7 +1374,8 @@ function drawLock(el){
 }
 
 /* ================= boot ================= */
-paintChips(); renderHist();
+paintChips(); renderHist(); paintHr();
+if(S.hrDevice) HR.resume();
 if('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
