@@ -1,4 +1,4 @@
-const CACHE = 'logn-v2';
+const CACHE = 'logn-v3';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/maskable-512.png'];
 
 self.addEventListener('install', e => {
