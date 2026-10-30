@@ -6,6 +6,7 @@
 
 - **Downshift**: a breath pacer. The circle grows on the inhale and shrinks on the exhale, with vibration cues (so it works eyes-closed) and a soft filtered-noise "breath" sound. Patterns: 4/6 (about 6 breaths a minute), 4/8 long exhale, double sigh, box 4·4·4·4. Built for post-training cool-downs.
 - **Cool-down**: box breathing (4·4·4·4, or an ease-in that runs 3s sides for the first minute) over a Drift scene (Silk by default). Vibration and sound carry the box so you can keep your eyes on the scene; the flow slows on the holds, with a faint ring and a quarter-arc per side of the box as a guide.
+- **HRV check**: resting heart-rate variability (RMSSD) over 1–3 minutes. Two sources: a fingertip over the rear camera with the torch on (the pulse wave is read from the red level of each frame, beats found offline and refined between frames), or RR intervals from a Bluetooth strap or watch that sends them. Beats outside 300–2000 ms or more than 20% off the local median are dropped; the result shows how many were clean and compares against your last 7 checks.
 - **Drift**: slow colour fields and a very slow outward particle flow, with a faint 10-second halo to breathe along to. For winding down before bed.
 - **Lock-in**: a fixation-then-tracking drill. Hold your eyes on the dot for the first 40%, then follow it. Tap when it turns amber. Reports cues caught and reaction time. For pre-heavy-single focus.
 
