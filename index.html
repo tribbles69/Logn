@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#070b0d">
+<meta name="description" content="Breath pacer, wind-down visuals and a focus drill.">
+<title>Logn</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#070b0d; --panel:#0e1518; --line:#1b272b; --text:#d6e2e0; --dim:#7d908e;
+  --teal:#5fb3a8; --teal2:#2f6f68; --amber:#e0a458; --violet:#8f86c9;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.hidden{display:none!important}
+
+/* ---------- home ---------- */
+#home{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 28px) 16px 40px}
+h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-transform:uppercase}
+.sub{color:var(--dim);font-size:14px;margin:0 0 26px}
+.mode{display:block;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);
+  border-radius:18px;padding:18px 18px 16px;margin-bottom:12px;position:relative;overflow:hidden}
+.mode h2{margin:0 0 4px;font-size:19px;font-weight:500}
+.mode p{margin:0;color:var(--dim);font-size:14px;line-height:1.4}
+.mode .dot{position:absolute;right:18px;top:20px;width:12px;height:12px;border-radius:50%}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--dim)}
+.chip.on{border-color:var(--teal2);color:var(--text);background:#13221f}
+.row{display:flex;gap:10px;margin:18px 0 8px}
+.toggle{flex:1;border:1px solid var(--line);border-radius:14px;padding:12px;font-size:14px;color:var(--dim);text-align:center}
+.toggle.on{color:var(--text);border-color:var(--teal2);background:#13221f}
+.sec{margin-top:26px;color:var(--dim);font-size:12px;letter-spacing:.15em;text-transform:uppercase}
+#hist{margin-top:10px}
+.h{display:flex;justify-content:space-between;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.h small{color:var(--dim)}
+.delta{font-variant-numeric:tabular-nums}
+.empty{color:var(--dim);font-size:14px;padding:8px 2px}
+.foot{display:flex;justify-content:space-between;margin-top:14px;font-size:13px;color:var(--dim)}
+.foot button{color:var(--dim);text-decoration:underline}
+
+/* ---------- check-in sheet ---------- */
+#sheet{position:fixed;inset:0;background:rgba(3,6,7,.92);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:22px;width:100%;max-width:420px;text-align:center}
+.card h3{margin:0 0 6px;font-weight:500;font-size:19px}
+.card p{margin:0 0 18px;color:var(--dim);font-size:14px}
+.scale{display:flex;gap:8px;justify-content:center}
+.scale button{width:52px;height:52px;border-radius:14px;border:1px solid var(--line);font-size:18px}
+.scale button:active{background:#13221f}
+.ends{display:flex;justify-content:space-between;color:var(--dim);font-size:12px;margin:8px 4px 16px}
+.skip{color:var(--dim);font-size:14px;text-decoration:underline}
+.result{font-size:15px;line-height:1.5;margin:0 0 14px}
+
+/* ---------- session ---------- */
+#stage{position:fixed;inset:0;background:#000;z-index:10}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+#cue{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 92px);text-align:center;
+  font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:rgba(214,226,224,.55);pointer-events:none;transition:opacity .6s}
+#clock{position:absolute;top:calc(env(safe-area-inset-top) + 16px);left:0;right:0;text-align:center;
+  font-size:13px;color:rgba(214,226,224,.28);font-variant-numeric:tabular-nums;pointer-events:none}
+#end{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 26px);
+  padding:10px 22px;border-radius:999px;border:1px solid rgba(255,255,255,.08);color:rgba(214,226,224,.35);font-size:13px;letter-spacing:.15em}
+</style>
+</head>
+<body>
+
+<main id="home">
+  <h1>Logn</h1>
+  <p class="sub">Calm, wind down, lock in.</p>
+
+  <button class="mode" data-mode="downshift">
+    <span class="dot" style="background:var(--teal)"></span>
+    <h2>Downshift</h2>
+    <p>Follow the circle. Slow breathing with a long exhale to bring your heart rate down after training.</p>
+    <div class="opts" data-group="pattern">
+      <span class="chip" data-v="calm">4 in · 6 out</span>
+      <span class="chip" data-v="long">4 in · 8 out</span>
+      <span class="chip" data-v="sigh">Double sigh</span>
+      <span class="chip" data-v="box">Box 4·4·4·4</span>
+    </div>
+    <div class="opts" data-group="dDown">
+      <span class="chip" data-v="2">2 min</span><span class="chip" data-v="5">5 min</span>
+      <span class="chip" data-v="10">10 min</span><span class="chip" data-v="0">Open</span>
+    </div>
+  </button>
+
+  <button class="mode" data-mode="drift">
+    <span class="dot" style="background:var(--violet)"></span>
+    <h2>Drift</h2>
+    <p>Slow, soft motion to rest your eyes on. Let your gaze go wide. For winding down before bed.</p>
+    <div class="opts" data-group="dDrift">
+      <span class="chip" data-v="5">5 min</span><span class="chip" data-v="10">10 min</span>
+      <span class="chip" data-v="20">20 min</span><span class="chip" data-v="0">Open</span>
+    </div>
+  </button>
+
+  <button class="mode" data-mode="lockin">
+    <span class="dot" style="background:var(--amber)"></span>
+    <h2>Lock-in</h2>
+    <p>Hold your eyes on the dot, then follow it. Tap the screen when it turns amber. Use it before a heavy single.</p>
+    <div class="opts" data-group="dLock">
+      <span class="chip" data-v="2">2 min</span><span class="chip" data-v="3">3 min</span>
+      <span class="chip" data-v="5">5 min</span>
+    </div>
+  </button>
+
+  <div class="row">
+    <button class="toggle" id="tSound">Sound</button>
+    <button class="toggle" id="tHaptic">Vibrate</button>
+    <button class="toggle" id="tCheck">Check-ins</button>
+  </div>
+
+  <div class="sec">Recent sessions</div>
+  <div id="hist"></div>
+  <div class="foot"><span id="stats"></span><button id="export">Export data</button></div>
+</main>
+
+<div id="sheet" class="hidden"><div class="card" id="sheetCard"></div></div>
+
+<div id="stage" class="hidden">
+  <canvas id="cv"></canvas>
+  <div id="clock"></div>
+  <div id="cue"></div>
+  <button id="end">END</button>
+</div>
+
+<script>
+'use strict';
+/* ================= storage ================= */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('logn.'+k); return v==null ? d : JSON.parse(v) }catch(e){ return d } },
+  set(k, v){ try{ localStorage.setItem('logn.'+k, JSON.stringify(v)) }catch(e){} }
+};
+const S = Object.assign({pattern:'calm', dDown:'5', dDrift:'10', dLock:'3', sound:true, haptic:true, check:true}, store.get('settings', {}));
+const saveS = () => store.set('settings', S);
+
+/* ================= home UI ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function paintChips(){
+  $$('.opts').forEach(g => {
+    const key = g.dataset.group;
+    g.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.v === S[key]));
+  });
+  $('#tSound').classList.toggle('on', S.sound);
+  $('#tHaptic').classList.toggle('on', S.haptic);
+  $('#tCheck').classList.toggle('on', S.check);
+}
+$$('.chip').forEach(c => c.addEventListener('click', e => {
+  e.stopPropagation();
+  S[c.parentElement.dataset.group] = c.dataset.v; saveS(); paintChips();
+}));
+$('#tSound').onclick = () => { S.sound = !S.sound; saveS(); paintChips() };
+$('#tHaptic').onclick = () => { S.haptic = !S.haptic; saveS(); paintChips(); if(S.haptic) buzz(30) };
+$('#tCheck').onclick = () => { S.check = !S.check; saveS(); paintChips() };
+$$('.mode').forEach(m => m.addEventListener('click', () => begin(m.dataset.mode)));
+
+const NAMES = {downshift:'Downshift', drift:'Drift', lockin:'Lock-in'};
+function renderHist(){
+  const log = store.get('log', []);
+  const el = $('#hist');
+  if(!log.length){ el.innerHTML = '<div class="empty">Nothing yet. Your sessions will show here.</div>'; $('#stats').textContent=''; return }
+  el.innerHTML = log.slice(-8).reverse().map(s => {
+    const d = new Date(s.ts);
+    const when = d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    let right = Math.round(s.secs/60)+' min';
+    if(s.before && s.after){ const dl = s.before - s.after; right += ` · <span class="delta">${s.before}→${s.after}</span>` }
+    if(s.score != null) right += ` · ${s.score}%`;
+    return `<div class="h"><span>${NAMES[s.mode]}<br><small>${when}</small></span><small>${right}</small></div>`;
+  }).join('');
+  const rated = log.filter(s => s.before && s.after);
+  if(rated.length){
+    const avg = rated.reduce((a,s)=>a+(s.before-s.after),0)/rated.length;
+    $('#stats').textContent = `${log.length} sessions · avg ${avg>=0?'−':'+'}${Math.abs(avg).toFixed(1)} wired`;
+  } else $('#stats').textContent = `${log.length} sessions`;
+}
+$('#export').onclick = () => {
+  const blob = new Blob([JSON.stringify({app:'logn', exported:new Date().toISOString(), settings:S, log:store.get('log',[])}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'logn-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+};
+
+/* ================= check-in sheet ================= */
+function ask(title, sub){
+  return new Promise(res => {
+    $('#sheetCard').innerHTML = `<h3>${title}</h3><p>${sub}</p>
+      <div class="scale">${[1,2,3,4,5].map(n=>`<button data-n="${n}">${n}</button>`).join('')}</div>
+      <div class="ends"><span>Calm</span><span>Wired</span></div>
+      <button class="skip">Skip</button>`;
+    $('#sheet').classList.remove('hidden');
+    $('#sheetCard').querySelectorAll('[data-n]').forEach(b => b.onclick = () => { $('#sheet').classList.add('hidden'); res(+b.dataset.n) });
+    $('#sheetCard').querySelector('.skip').onclick = () => { $('#sheet').classList.add('hidden'); res(null) };
+  });
+}
+function showResult(html){
+  return new Promise(res => {
+    $('#sheetCard').innerHTML = `${html}<button class="chip on" style="padding:10px 26px;font-size:15px">Done</button>`;
+    $('#sheet').classList.remove('hidden');
+    $('#sheetCard').querySelector('button').onclick = () => { $('#sheet').classList.add('hidden'); res() };
+  });
+}
+
+/* ================= device helpers ================= */
+function buzz(p){ if(S.haptic && navigator.vibrate) try{ navigator.vibrate(p) }catch(e){} }
+let wakeLock = null;
+async function lockScreen(){ try{ wakeLock = await navigator.wakeLock?.request('screen') }catch(e){} }
+document.addEventListener('visibilitychange', () => { if(running && document.visibilityState==='visible') lockScreen() });
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= audio: soft "breath" noise ================= */
+const A = { ctx:null, filt:null, gain:null, drone:null, dGain:null };
+function audioStart(){
+  if(!S.sound) return;
+  try{
+    const ctx = A.ctx || new (window.AudioContext||window.webkitAudioContext)();
+    A.ctx = ctx; ctx.resume();
+    // pink-ish noise, 4 s loop
+    const len = ctx.sampleRate*4, buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for(let ch=0; ch<2; ch++){
+      const d = buf.getChannelData(ch); let b0=0,b1=0,b2=0;
+      for(let i=0;i<len;i++){ const w=Math.random()*2-1; b0=.997*b0+w*.029591; b1=.985*b1+w*.032534; b2=.95*b2+w*.048056; d[i]=(b0+b1+b2+w*.05)*.25 }
+    }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+    const filt = ctx.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=260; filt.Q.value=.4;
+    const gain = ctx.createGain(); gain.gain.value = 0;
+    src.connect(filt).connect(gain).connect(ctx.destination); src.start();
+    // very quiet low drone, a fifth apart
+    const dGain = ctx.createGain(); dGain.gain.value = 0;
+    [55, 82.5].forEach(f => { const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(dGain); o.start(); A.drone=(A.drone||[]).concat(o) });
+    dGain.connect(ctx.destination);
+    dGain.gain.linearRampToValueAtTime(.035, ctx.currentTime+4);
+    gain.gain.linearRampToValueAtTime(.05, ctx.currentTime+2);
+    Object.assign(A, {src, filt, gain, dGain});
+  }catch(e){ A.ctx = null }
+}
+function audioBreath(type, secs){
+  if(!A.gain) return;
+  const t = A.ctx.currentTime, f = A.filt.frequency, g = A.gain.gain;
+  f.cancelScheduledValues(t); g.cancelScheduledValues(t);
+  f.setValueAtTime(f.value, t); g.setValueAtTime(g.value, t);
+  if(type==='in'){ f.exponentialRampToValueAtTime(1500, t+secs); g.linearRampToValueAtTime(.16, t+secs) }
+  else if(type==='out'){ f.exponentialRampToValueAtTime(220, t+secs); g.linearRampToValueAtTime(.04, t+secs) }
+}
+function audioStop(){
+  if(!A.ctx) return;
+  const t = A.ctx.currentTime;
+  try{
+    A.gain && A.gain.gain.cancelScheduledValues(t);
+    A.gain && A.gain.gain.setTargetAtTime(0, t, .4);
+    A.dGain && A.dGain.gain.cancelScheduledValues(t);
+    A.dGain && A.dGain.gain.setTargetAtTime(0, t, .4);
+    const src = A.src, dr = A.drone || [];
+    setTimeout(()=>{ try{ src && src.stop(); dr.forEach(o=>o.stop()) }catch(e){} }, 2000);
+  }catch(e){}
+  A.src = A.gain = A.filt = A.dGain = null; A.drone = null;
+}
+
+/* ================= canvas ================= */
+const cv = $('#cv'), cx = cv.getContext('2d');
+let W=0, H=0, DPR=1;
+function fit(){ DPR = Math.min(devicePixelRatio||1, 2); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; cx.setTransform(DPR,0,0,DPR,0,0) }
+addEventListener('resize', fit);
+
+/* ================= breathing patterns ================= */
+const PATTERNS = {
+  calm: [['in',4],['out',6]],
+  long: [['in',4],['out',8]],
+  sigh: [['in',2.5],['top',1],['out',6.5]],
+  box:  [['in',4],['hold',4],['out',4],['hold',4]]
+};
+const CUE = {in:'breathe in', top:'sip more in', hold:'hold', out:'breathe out'};
+const ease = x => .5 - .5*Math.cos(Math.PI*x);
+
+/* ================= session runner ================= */
+let running = false, raf = 0, mode = null, t0 = 0, total = 0, state = {};
+
+async function begin(m){
+  mode = m;
+  let before = null;
+  if(S.check && m !== 'lockin') before = await ask('How wired are you?', 'Right now, before you start.');
+  if(S.check && m === 'lockin') before = await ask('How settled are you?', 'Right now, before you lock in.');
+  $('#home').classList.add('hidden'); $('#stage').classList.remove('hidden');
+  try{ await document.documentElement.requestFullscreen?.({navigationUI:'hide'}) }catch(e){}
+  fit(); lockScreen();
+  const mins = +(m==='downshift' ? S.dDown : m==='drift' ? S.dDrift : S.dLock);
+  total = mins*60;
+  state = {before, hits:0, misses:0, falses:0, targets:[]};
+  if(m === 'downshift'){ state.pat = PATTERNS[S.pattern]; state.phase = -1;
+    // circle size (0..1) at the end of each phase
+    let s = 0; state.ends = state.pat.map(([ty], i, a) => {
+      if(ty==='in') s = a[i+1] && a[i+1][0]==='top' ? .8 : 1;
+      else if(ty==='top') s = 1; else if(ty==='out') s = 0;
+      return s;
+    }); audioStart() }
+  if(m === 'drift'){ initDrift(); audioStart(); if(A.gain){ A.gain.gain.linearRampToValueAtTime(.06, A.ctx.currentTime+3) } }
+  if(m === 'lockin'){ initLock() }
+  $('#cue').textContent = m==='drift' ? 'soften your gaze' : m==='lockin' ? 'eyes on the dot' : '';
+  $('#cue').style.opacity = 1;
+  t0 = performance.now(); running = true;
+  raf = requestAnimationFrame(frame);
+}
+
+async function finish(early){
+  if(!running) return;
+  running = false; cancelAnimationFrame(raf); audioStop();
+  buzz([60,80,60]);
+  try{ wakeLock && wakeLock.release(); wakeLock = null }catch(e){}
+  try{ document.fullscreenElement && document.exitFullscreen() }catch(e){}
+  const secs = Math.round((performance.now()-t0)/1000);
+  $('#stage').classList.add('hidden'); $('#home').classList.remove('hidden');
+  let score = null;
+  if(mode === 'lockin'){
+    const n = state.hits + state.misses;
+    score = n ? Math.max(0, Math.round(100*(state.hits - state.falses*.5)/n)) : null;
+    const rts = state.rts || [];
+    const rt = rts.length ? Math.round(rts.reduce((a,b)=>a+b,0)/rts.length) : null;
+    await showResult(`<h3>Locked in</h3><p class="result">Caught ${state.hits} of ${n} cues${state.falses?`, ${state.falses} early tap${state.falses>1?'s':''}`:''}.${rt?`<br>Average reaction ${rt} ms.`:''}</p>`);
+  }
+  let after = null;
+  if(secs >= 20 && state.before != null)
+    after = await ask(mode==='lockin' ? 'How settled are you now?' : 'How wired are you now?', 'Same scale as before.');
+  if(secs >= 20){
+    const log = store.get('log', []);
+    log.push({ts:Date.now(), mode, secs, pattern: mode==='downshift'?S.pattern:undefined, before:state.before, after, score});
+    store.set('log', log.slice(-500));
+  }
+  renderHist();
+}
+$('#end').addEventListener('click', e => { e.stopPropagation(); finish(true) });
+
+function frame(now){
+  if(!running) return;
+  const el = (now - t0)/1000;
+  if(total && el >= total){ finish(false); return }
+  const left = total ? total - el : el;
+  const mm = Math.floor(left/60), ss = Math.floor(left%60);
+  $('#clock').textContent = `${mm}:${String(ss).padStart(2,'0')}`;
+  if(el > 8 && mode !== 'downshift') $('#cue').style.opacity = 0;
+  if(mode === 'downshift') drawDown(el);
+  else if(mode === 'drift') drawDrift(el);
+  else drawLock(el);
+  raf = requestAnimationFrame(frame);
+}
+
+/* ---------- Downshift ---------- */
+function drawDown(el){
+  const pat = state.pat, cyc = pat.reduce((a,p)=>a+p[1],0);
+  const lead = 3; // 3 s settle before first breath
+  cx.fillStyle = '#000'; cx.fillRect(0,0,W,H);
+  const R = Math.min(W,H), rMin = R*.11, rMax = R*.36, mx = W/2, my = H*.46;
+  let size = 0, label = 'get comfortable', idx = -1, p = 0;
+  if(el >= lead){
+    let t = (el - lead) % cyc;
+    for(let i=0;i<pat.length;i++){ if(t < pat[i][1]){ idx=i; p=t/pat[i][1]; break } t -= pat[i][1] }
+    const type = pat[idx][0];
+    const s0 = idx ? state.ends[idx-1] : 0, s1 = state.ends[idx];
+    size = s0 + (s1 - s0)*ease(p);
+    label = CUE[type];
+    if(idx !== state.phase){
+      state.phase = idx;
+      buzz(type==='in' ? 45 : type==='top' ? 25 : type==='out' ? [25,70,25] : 12);
+      audioBreath(type==='top'?'in':type, pat[idx][1]);
+    }
+  }
+  const r = rMin + (rMax - rMin)*size;
+  // halo
+  const g = cx.createRadialGradient(mx,my,r*.2,mx,my,r*1.9);
+  g.addColorStop(0,`rgba(95,179,168,${.10+.12*size})`); g.addColorStop(1,'rgba(95,179,168,0)');
+  cx.fillStyle = g; cx.beginPath(); cx.arc(mx,my,r*1.9,0,7); cx.fill();
+  // guide rings
+  cx.strokeStyle='rgba(95,179,168,.12)'; cx.lineWidth=1;
+  cx.beginPath(); cx.arc(mx,my,rMax,0,7); cx.stroke();
+  cx.beginPath(); cx.arc(mx,my,rMin,0,7); cx.stroke();
+  // body
+  const b = cx.createRadialGradient(mx-r*.3,my-r*.3,r*.1,mx,my,r);
+  b.addColorStop(0,`rgba(140,210,198,${.55+.25*size})`); b.addColorStop(1,'rgba(47,111,104,.55)');
+  cx.fillStyle = b; cx.beginPath(); cx.arc(mx,my,r,0,7); cx.fill();
+  // phase progress arc
+  if(idx >= 0){
+    cx.strokeStyle='rgba(214,226,224,.35)'; cx.lineWidth=2; cx.lineCap='round';
+    cx.beginPath(); cx.arc(mx,my,rMax+10,-Math.PI/2,-Math.PI/2+Math.PI*2*p); cx.stroke();
+  }
+  $('#cue').textContent = label;
+}
+
+/* ---------- Drift ---------- */
+function initDrift(){
+  const n = Math.round(Math.min(220, W*H/2600));
+  state.parts = Array.from({length:n}, () => newPart(true));
+  state.blobs = [0,1,2].map(i => ({a:Math.random()*6.28, s:.02+.015*i, hue:[175,250,205][i]}));
+}
+function newPart(anywhere){
+  const a = Math.random()*Math.PI*2, d = anywhere ? Math.random() : Math.random()*.08;
+  return {a, d, z:.4+Math.random()*.6, tw:Math.random()*6.28};
+}
+function drawDrift(el){
+  const mx=W/2, my=H/2, M=Math.hypot(W,H)/2;
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+  // slow colour fields
+  cx.globalCompositeOperation='lighter';
+  state.blobs.forEach((b,i) => {
+    const t = el*b.s + b.a;
+    const x = mx + Math.cos(t)*W*.28, y = my + Math.sin(t*1.3)*H*.22, r = Math.max(W,H)*.55;
+    const g = cx.createRadialGradient(x,y,0,x,y,r);
+    g.addColorStop(0,`hsla(${b.hue},35%,32%,.16)`); g.addColorStop(1,`hsla(${b.hue},35%,20%,0)`);
+    cx.fillStyle=g; cx.fillRect(0,0,W,H);
+  });
+  cx.globalCompositeOperation='source-over';
+  // faint 6/min breath halo (10 s cycle) to settle into
+  const br = .5 - .5*Math.cos(el/10*Math.PI*2);
+  cx.strokeStyle=`rgba(180,175,230,${.04+.07*br})`; cx.lineWidth=1.5;
+  cx.beginPath(); cx.arc(mx,my,Math.min(W,H)*(.16+.08*br),0,7); cx.stroke();
+  // very slow outward flow (wide-field motion)
+  const sp = reduced ? .0006 : .0016;
+  for(const p of state.parts){
+    p.d += sp*(.25+p.d)*p.z;
+    if(p.d > 1) Object.assign(p, newPart(false));
+    const x = mx + Math.cos(p.a)*p.d*M, y = my + Math.sin(p.a)*p.d*M;
+    const a = Math.min(1, p.d*4) * (.25+.2*Math.sin(el*.6+p.tw)) * p.z;
+    cx.fillStyle=`rgba(210,220,235,${a})`;
+    cx.beginPath(); cx.arc(x,y,.6+1.4*p.d*p.z,0,7); cx.fill();
+  }
+  // tiny centre point to rest on
+  cx.fillStyle='rgba(214,226,224,.25)'; cx.beginPath(); cx.arc(mx,my,1.6,0,7); cx.fill();
+}
+
+/* ---------- Lock-in ---------- */
+function initLock(){
+  state.next = 6 + Math.random()*6; state.active = null; state.rts = [];
+  state.lastPhase = 'fix';
+}
+cv.addEventListener('pointerdown', e => {
+  if(!running || mode !== 'lockin') return;
+  const el = (performance.now()-t0)/1000;
+  if(state.active != null && el - state.active <= 1.2){
+    state.hits++; state.rts.push(Math.round((el-state.active)*1000)); state.active = null; state.flash = el; state.next = el + 5 + Math.random()*9; buzz(20);
+  } else { state.falses++; state.miss = el; buzz([10,40,10]) }
+});
+function drawLock(el){
+  const mx=W/2, my=H*.46, fixEnd = total*.4;
+  const phase = el < fixEnd ? 'fix' : 'track';
+  if(phase !== state.lastPhase){ state.lastPhase = phase; $('#cue').textContent='now follow it'; $('#cue').style.opacity=1; state.cueAt = el; buzz([30,50,30]) }
+  if(state.cueAt && el - state.cueAt > 4) $('#cue').style.opacity = 0;
+  let x = mx, y = my;
+  if(phase === 'track'){
+    const t = el - fixEnd, ramp = Math.min(1, t/6);
+    x = mx + Math.sin(t*.42)*W*.34*ramp;
+    y = my + Math.sin(t*.29+.6)*H*.22*ramp;
+  }
+  // targets
+  if(state.active == null && el >= state.next && total - el > 2){ state.active = el }
+  if(state.active != null && el - state.active > 1.2){ state.misses++; state.active = null; state.next = el + 5 + Math.random()*9 }
+  const lit = state.active != null && el - state.active < .7;
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+  // subtle frame so tracking has a reference
+  cx.strokeStyle='rgba(224,164,88,.06)'; cx.lineWidth=1;
+  cx.strokeRect(W*.1, H*.18, W*.8, H*.56);
+  const col = lit ? '224,164,88' : '214,226,224';
+  const g = cx.createRadialGradient(x,y,0,x,y,26);
+  g.addColorStop(0,`rgba(${col},.35)`); g.addColorStop(1,`rgba(${col},0)`);
+  cx.fillStyle=g; cx.beginPath(); cx.arc(x,y,26,0,7); cx.fill();
+  cx.fillStyle=`rgba(${col},.95)`; cx.beginPath(); cx.arc(x,y,4.5,0,7); cx.fill();
+  // feedback ring
+  if(state.flash && el - state.flash < .5){ const k=(el-state.flash)/.5; cx.strokeStyle=`rgba(95,179,168,${.6*(1-k)})`; cx.lineWidth=2; cx.beginPath(); cx.arc(x,y,10+30*k,0,7); cx.stroke() }
+  if(state.miss && el - state.miss < .4){ const k=(el-state.miss)/.4; cx.strokeStyle=`rgba(200,90,90,${.4*(1-k)})`; cx.lineWidth=1.5; cx.beginPath(); cx.arc(x,y,12+10*k,0,7); cx.stroke() }
+}
+
+/* ================= boot ================= */
+paintChips(); renderHist();
+if('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>

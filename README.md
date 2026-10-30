@@ -1,0 +1,22 @@
+# Logn
+
+*Logn* (Icelandic: dead calm, windless). A small installable PWA for shifting state with visuals, breath and attention.
+
+## Modes
+
+- **Downshift**: a breath pacer. The circle grows on the inhale and shrinks on the exhale, with vibration cues (so it works eyes-closed) and a soft filtered-noise "breath" sound. Patterns: 4/6 (about 6 breaths a minute), 4/8 long exhale, double sigh, box 4·4·4·4. Built for post-training cool-downs.
+- **Drift**: slow colour fields and a very slow outward particle flow, with a faint 10-second halo to breathe along to. For winding down before bed.
+- **Lock-in**: a fixation-then-tracking drill. Hold your eyes on the dot for the first 40%, then follow it. Tap when it turns amber. Reports cues caught and reaction time. For pre-heavy-single focus.
+
+Optional before/after check-ins (1 calm, 5 wired) log whether a session actually moved you.
+
+## Design rules
+
+- No flicker or strobing. Every change is slow or a single soft colour shift.
+- Dark and low-brightness throughout.
+- Screen stays awake during a session (Wake Lock).
+- All data stays in the browser (localStorage); "Export data" gives a JSON file.
+
+## Later
+
+If it earns its place, Downshift becomes Ironlog's rest-timer and cool-down screen, and Lock-in its pre-set screen.
