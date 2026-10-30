@@ -29,7 +29,12 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 .mode h2{margin:0 0 4px;font-size:19px;font-weight:500}
 .mode p{margin:0;color:var(--dim);font-size:14px;line-height:1.4}
 .mode .dot{position:absolute;right:18px;top:20px;width:12px;height:12px;border-radius:50%}
-.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lbl{margin-top:14px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.go{display:block;width:100%;margin-top:16px;padding:14px;border-radius:14px;font-size:16px;font-weight:500;
+  background:var(--c);color:#061011;letter-spacing:.02em}
+.go:active{filter:brightness(.85)}
+.chip{cursor:pointer}
 .chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;color:var(--dim)}
 .chip.on{border-color:var(--teal2);color:var(--text);background:#13221f}
 .row{display:flex;gap:10px;margin:18px 0 8px}
@@ -73,41 +78,57 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
   <h1>Logn</h1>
   <p class="sub">Calm, wind down, lock in.</p>
 
-  <button class="mode" data-mode="downshift">
+  <div class="mode" data-mode="downshift" style="--c:var(--teal)">
     <span class="dot" style="background:var(--teal)"></span>
     <h2>Downshift</h2>
     <p>Follow the circle. Slow breathing with a long exhale to bring your heart rate down after training.</p>
+    <div class="lbl">Breathing</div>
     <div class="opts" data-group="pattern">
       <span class="chip" data-v="calm">4 in · 6 out</span>
       <span class="chip" data-v="long">4 in · 8 out</span>
       <span class="chip" data-v="sigh">Double sigh</span>
       <span class="chip" data-v="box">Box 4·4·4·4</span>
     </div>
+    <div class="lbl">Length</div>
     <div class="opts" data-group="dDown">
       <span class="chip" data-v="2">2 min</span><span class="chip" data-v="5">5 min</span>
       <span class="chip" data-v="10">10 min</span><span class="chip" data-v="0">Open</span>
     </div>
-  </button>
+    <button class="go" data-start="downshift">Start Downshift</button>
+  </div>
 
-  <button class="mode" data-mode="drift">
+  <div class="mode" data-mode="drift" style="--c:var(--violet)">
     <span class="dot" style="background:var(--violet)"></span>
     <h2>Drift</h2>
-    <p>Slow, soft motion to rest your eyes on. Let your gaze go wide. For winding down before bed.</p>
+    <p>Slow, beautiful motion to rest your eyes on. Let your gaze go wide. For winding down before bed.</p>
+    <div class="lbl">Scene</div>
+    <div class="opts" data-group="scene">
+      <span class="chip" data-v="cycle">Cycle all</span>
+      <span class="chip" data-v="silk">Silk</span>
+      <span class="chip" data-v="aurora">Aurora</span>
+      <span class="chip" data-v="mandala">Mandala</span>
+      <span class="chip" data-v="nebula">Nebula</span>
+      <span class="chip" data-v="stars">Stars</span>
+    </div>
+    <div class="lbl">Length</div>
     <div class="opts" data-group="dDrift">
       <span class="chip" data-v="5">5 min</span><span class="chip" data-v="10">10 min</span>
       <span class="chip" data-v="20">20 min</span><span class="chip" data-v="0">Open</span>
     </div>
-  </button>
+    <button class="go" data-start="drift">Start Drift</button>
+  </div>
 
-  <button class="mode" data-mode="lockin">
+  <div class="mode" data-mode="lockin" style="--c:var(--amber)">
     <span class="dot" style="background:var(--amber)"></span>
     <h2>Lock-in</h2>
     <p>Hold your eyes on the dot, then follow it. Tap the screen when it turns amber. Use it before a heavy single.</p>
+    <div class="lbl">Length</div>
     <div class="opts" data-group="dLock">
       <span class="chip" data-v="2">2 min</span><span class="chip" data-v="3">3 min</span>
       <span class="chip" data-v="5">5 min</span>
     </div>
-  </button>
+    <button class="go" data-start="lockin">Start Lock-in</button>
+  </div>
 
   <div class="row">
     <button class="toggle" id="tSound">Sound</button>
@@ -136,7 +157,7 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem('logn.'+k); return v==null ? d : JSON.parse(v) }catch(e){ return d } },
   set(k, v){ try{ localStorage.setItem('logn.'+k, JSON.stringify(v)) }catch(e){} }
 };
-const S = Object.assign({pattern:'calm', dDown:'5', dDrift:'10', dLock:'3', sound:true, haptic:true, check:true}, store.get('settings', {}));
+const S = Object.assign({scene:'cycle', pattern:'calm', dDown:'5', dDrift:'10', dLock:'3', sound:true, haptic:true, check:true}, store.get('settings', {}));
 const saveS = () => store.set('settings', S);
 
 /* ================= home UI ================= */
@@ -148,9 +169,9 @@ function paintChips(){
     const key = g.dataset.group;
     g.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.v === S[key]));
   });
-  $('#tSound').classList.toggle('on', S.sound);
-  $('#tHaptic').classList.toggle('on', S.haptic);
-  $('#tCheck').classList.toggle('on', S.check);
+  [['#tSound','Sound',S.sound],['#tHaptic','Vibrate',S.haptic],['#tCheck','Check-ins',S.check]].forEach(([id,n,on]) => {
+    const b = $(id); b.classList.toggle('on', on); b.textContent = `${n}: ${on?'on':'off'}`;
+  });
 }
 $$('.chip').forEach(c => c.addEventListener('click', e => {
   e.stopPropagation();
@@ -159,7 +180,7 @@ $$('.chip').forEach(c => c.addEventListener('click', e => {
 $('#tSound').onclick = () => { S.sound = !S.sound; saveS(); paintChips() };
 $('#tHaptic').onclick = () => { S.haptic = !S.haptic; saveS(); paintChips(); if(S.haptic) buzz(30) };
 $('#tCheck').onclick = () => { S.check = !S.check; saveS(); paintChips() };
-$$('.mode').forEach(m => m.addEventListener('click', () => begin(m.dataset.mode)));
+$$('.go').forEach(b => b.addEventListener('click', () => begin(b.dataset.start)));
 
 const NAMES = {downshift:'Downshift', drift:'Drift', lockin:'Lock-in'};
 function renderHist(){
@@ -266,7 +287,7 @@ function audioStop(){
 const cv = $('#cv'), cx = cv.getContext('2d');
 let W=0, H=0, DPR=1;
 function fit(){ DPR = Math.min(devicePixelRatio||1, 2); W = innerWidth; H = innerHeight; cv.width = W*DPR; cv.height = H*DPR; cx.setTransform(DPR,0,0,DPR,0,0) }
-addEventListener('resize', fit);
+addEventListener('resize', () => { fit(); if(running && mode==='drift') startScene(state.scene) });
 
 /* ================= breathing patterns ================= */
 const PATTERNS = {
@@ -301,6 +322,7 @@ async function begin(m){
     }); audioStart() }
   if(m === 'drift'){ initDrift(); audioStart(); if(A.gain){ A.gain.gain.linearRampToValueAtTime(.06, A.ctx.currentTime+3) } }
   if(m === 'lockin'){ initLock() }
+  cv.style.opacity = 1;
   $('#cue').textContent = m==='drift' ? 'soften your gaze' : m==='lockin' ? 'eyes on the dot' : '';
   $('#cue').style.opacity = 1;
   t0 = performance.now(); running = true;
@@ -309,7 +331,7 @@ async function begin(m){
 
 async function finish(early){
   if(!running) return;
-  running = false; cancelAnimationFrame(raf); audioStop();
+  running = false; cancelAnimationFrame(raf); audioStop(); cv.style.opacity = 1;
   buzz([60,80,60]);
   try{ wakeLock && wakeLock.release(); wakeLock = null }catch(e){}
   try{ document.fullscreenElement && document.exitFullscreen() }catch(e){}
@@ -391,45 +413,208 @@ function drawDown(el){
 }
 
 /* ---------- Drift ---------- */
+const SCENES = ['silk','aurora','mandala','nebula','stars'];
+const SCENE_SECS = 120, FADE = 2.5;
+const TAU = Math.PI*2;
+// cheap smooth pseudo-noise from layered sines
+const wave = (x,y,t) => Math.sin(x*1.7+t*.31+Math.sin(y*1.3+t*.17)) + Math.sin(y*2.1-t*.23+Math.sin(x*.9-t*.11))*.8 + Math.sin((x+y)*1.1+t*.13)*.6;
+
 function initDrift(){
-  const n = Math.round(Math.min(220, W*H/2600));
-  state.parts = Array.from({length:n}, () => newPart(true));
-  state.blobs = [0,1,2].map(i => ({a:Math.random()*6.28, s:.02+.015*i, hue:[175,250,205][i]}));
+  state.order = S.scene==='cycle' ? SCENES.slice().sort(()=>Math.random()-.5) : [S.scene];
+  state.si = 0; state.sceneAt = 0; state.lastT = 0; state.breathPh = -1;
+  startScene(state.order[0]);
 }
-function newPart(anywhere){
-  const a = Math.random()*Math.PI*2, d = anywhere ? Math.random() : Math.random()*.08;
-  return {a, d, z:.4+Math.random()*.6, tw:Math.random()*6.28};
+function startScene(name){
+  state.scene = name; state.sd = {};
+  cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+  cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+  SCENE[name].init(state.sd);
 }
 function drawDrift(el){
-  const mx=W/2, my=H/2, M=Math.hypot(W,H)/2;
-  cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
-  // slow colour fields
-  cx.globalCompositeOperation='lighter';
-  state.blobs.forEach((b,i) => {
-    const t = el*b.s + b.a;
-    const x = mx + Math.cos(t)*W*.28, y = my + Math.sin(t*1.3)*H*.22, r = Math.max(W,H)*.55;
-    const g = cx.createRadialGradient(x,y,0,x,y,r);
-    g.addColorStop(0,`hsla(${b.hue},35%,32%,.16)`); g.addColorStop(1,`hsla(${b.hue},35%,20%,0)`);
-    cx.fillStyle=g; cx.fillRect(0,0,W,H);
-  });
-  cx.globalCompositeOperation='source-over';
-  // faint 6/min breath halo (10 s cycle) to settle into
-  const br = .5 - .5*Math.cos(el/10*Math.PI*2);
-  cx.strokeStyle=`rgba(180,175,230,${.04+.07*br})`; cx.lineWidth=1.5;
-  cx.beginPath(); cx.arc(mx,my,Math.min(W,H)*(.16+.08*br),0,7); cx.stroke();
-  // very slow outward flow (wide-field motion)
-  const sp = reduced ? .0006 : .0016;
-  for(const p of state.parts){
-    p.d += sp*(.25+p.d)*p.z;
-    if(p.d > 1) Object.assign(p, newPart(false));
-    const x = mx + Math.cos(p.a)*p.d*M, y = my + Math.sin(p.a)*p.d*M;
-    const a = Math.min(1, p.d*4) * (.25+.2*Math.sin(el*.6+p.tw)) * p.z;
-    cx.fillStyle=`rgba(210,220,235,${a})`;
-    cx.beginPath(); cx.arc(x,y,.6+1.4*p.d*p.z,0,7); cx.fill();
-  }
-  // tiny centre point to rest on
-  cx.fillStyle='rgba(214,226,224,.25)'; cx.beginPath(); cx.arc(mx,my,1.6,0,7); cx.fill();
+  const dt = Math.min(.05, el - (state.lastT||el)) || 1/60; state.lastT = el;
+  // scene cycling with a fade through black (canvas opacity, so trails aren't smeared)
+  if(state.order.length > 1){
+    const into = el - state.sceneAt;
+    if(into > SCENE_SECS){ state.si = (state.si+1) % state.order.length; state.sceneAt = el; startScene(state.order[state.si]) }
+    const k = el - state.sceneAt;
+    cv.style.opacity = Math.min(1, k/FADE, (SCENE_SECS-k)/FADE).toFixed(3);
+  } else cv.style.opacity = Math.min(1, el/FADE).toFixed(3);
+  // sound swells on a 10 s cycle (about 6 breaths a minute)
+  const ph = Math.floor(el/5) % 2;
+  if(ph !== state.breathPh){ state.breathPh = ph; audioBreath(ph ? 'out' : 'in', 5) }
+  SCENE[state.scene].draw(state.sd, el, dt * (reduced ? .5 : 1));
 }
+function fade(a){ cx.globalCompositeOperation='source-over'; cx.fillStyle=`rgba(0,0,0,${a})`; cx.fillRect(0,0,W,H) }
+
+const SCENE = {
+  /* Silk: thousands of threads following a slowly shifting current, leaving soft trails */
+  silk: {
+    init(d){
+      const n = Math.round(Math.min(1400, W*H/260));
+      d.p = Array.from({length:n}, () => ({x:Math.random()*W, y:Math.random()*H, life:Math.random()*400}));
+      d.hue = 170 + Math.random()*120;
+    },
+    draw(d, t, dt){
+      fade(.03);
+      cx.globalCompositeOperation='lighter'; cx.lineWidth=1.1;
+      const s = 2.2/Math.min(W,H), sp = 55*dt, tt = t*.08;
+      const base = d.hue + Math.sin(t*.021)*45;
+      for(let band=0; band<3; band++){
+        cx.strokeStyle = `hsla(${base + band*28},75%,62%,.30)`;
+        cx.beginPath();
+        for(let i=band; i<d.p.length; i+=3){
+          const p = d.p[i];
+          const ang = wave(p.x*s, p.y*s, tt) * 1.6;
+          const nx = p.x + Math.cos(ang)*sp, ny = p.y + Math.sin(ang)*sp;
+          cx.moveTo(p.x,p.y); cx.lineTo(nx,ny);
+          p.x = nx; p.y = ny; p.life -= dt*60;
+          if(p.life < 0 || nx < -5 || ny < -5 || nx > W+5 || ny > H+5){ p.x=Math.random()*W; p.y=Math.random()*H; p.life=200+Math.random()*400 }
+        }
+        cx.stroke();
+      }
+    }
+  },
+
+  /* Aurora: layered curtains folding slowly over a starfield */
+  aurora: {
+    init(d){
+      const mk = stops => { const c=document.createElement('canvas'); c.width=1; c.height=256; const g=c.getContext('2d');
+        const gr=g.createLinearGradient(0,0,0,256); stops.forEach(([o,col])=>gr.addColorStop(o,col)); g.fillStyle=gr; g.fillRect(0,0,1,256); return c };
+      d.strips = [
+        mk([[0,'rgba(80,255,170,0)'],[.55,'rgba(80,255,170,.55)'],[.9,'rgba(120,255,200,.9)'],[1,'rgba(160,255,220,0)']]),
+        mk([[0,'rgba(150,90,255,0)'],[.6,'rgba(150,90,255,.5)'],[.92,'rgba(110,200,255,.8)'],[1,'rgba(110,200,255,0)']]),
+        mk([[0,'rgba(255,90,170,0)'],[.6,'rgba(255,90,170,.35)'],[.9,'rgba(90,255,190,.6)'],[1,'rgba(90,255,190,0)']])
+      ];
+      d.stars = Array.from({length:Math.round(W*H/2500)}, () => ({x:Math.random()*W, y:Math.random()*H*.85, a:.2+Math.random()*.5, tw:Math.random()*TAU}));
+      d.layers = [0,1,2].map(i => ({strip:i, base:.30+i*.09, h:.30-.05*i, f:1+i*.35, ph:Math.random()*10}));
+    },
+    draw(d, t){
+      cx.globalCompositeOperation='source-over';
+      const sky = cx.createLinearGradient(0,0,0,H); sky.addColorStop(0,'#01030a'); sky.addColorStop(1,'#040a12');
+      cx.fillStyle=sky; cx.fillRect(0,0,W,H);
+      for(const s of d.stars){ cx.fillStyle=`rgba(220,230,255,${s.a*(.75+.25*Math.sin(t*.4+s.tw))})`; cx.fillRect(s.x,s.y,1.2,1.2) }
+      cx.globalCompositeOperation='lighter';
+      const step = 3;
+      for(const L of d.layers){
+        const img = d.strips[L.strip];
+        for(let x=0; x<W+step; x+=step){
+          const u = x/W;
+          const y = H*(L.base + .07*Math.sin(u*3.1*L.f + t*.09 + L.ph) + .035*Math.sin(u*7.3 + t*.17 + L.ph*2));
+          const h = H*(L.h + .08*Math.sin(u*2.3 - t*.07 + L.ph));
+          const fold = .5 + .5*Math.sin(u*11*L.f + t*.35 + Math.sin(u*4 + t*.11)*2.5);
+          cx.globalAlpha = .12 + .38*fold*fold;
+          cx.drawImage(img, x, y - h, step+1, h);
+        }
+      }
+      cx.globalAlpha = 1;
+      // horizon glow
+      cx.globalCompositeOperation='source-over';
+      const hz = cx.createLinearGradient(0,H*.78,0,H); hz.addColorStop(0,'rgba(0,0,0,0)'); hz.addColorStop(1,'rgba(0,0,0,.9)');
+      cx.fillStyle=hz; cx.fillRect(0,H*.78,W,H*.22);
+    }
+  },
+
+  /* Mandala: two pens tracing a slowly evolving curve, mirrored into a 12-fold kaleidoscope */
+  mandala: {
+    init(d){
+      d.K = 12; d.pens = [{a:.37,b:.13,c:.61,off:0,prev:null},{a:.23,b:-.09,c:.47,off:2,prev:null}];
+      d.hue = Math.random()*360;
+    },
+    draw(d, t, dt){
+      fade(.028);
+      const mx=W/2, my=H/2, R=Math.min(W,H)*.46, rot=t*.03;
+      cx.globalCompositeOperation='lighter'; cx.lineWidth=1.3; cx.lineCap='round';
+      d.pens.forEach((p,pi) => {
+        const T = t + p.off;
+        const r = R*(.12 + .85*(.5+.5*Math.sin(T*p.a)) * (.75+.25*Math.sin(T*p.c*1.7)));
+        const th = T*p.b + .55*Math.sin(T*p.c);
+        const cur = [Math.cos(th)*r, Math.sin(th)*r];
+        if(p.prev){
+          const hue = (d.hue + t*4 + pi*60 + r/R*80) % 360;
+          cx.strokeStyle = `hsla(${hue},75%,62%,.55)`;
+          cx.beginPath();
+          for(let k=0;k<d.K;k++){
+            const ang = rot + k*TAU/d.K, ca=Math.cos(ang), sa=Math.sin(ang);
+            for(const m of [1,-1]){
+              const x0=p.prev[0], y0=p.prev[1]*m, x1=cur[0], y1=cur[1]*m;
+              cx.moveTo(mx + x0*ca - y0*sa, my + x0*sa + y0*ca);
+              cx.lineTo(mx + x1*ca - y1*sa, my + x1*sa + y1*ca);
+            }
+          }
+          cx.stroke();
+        }
+        p.prev = cur;
+      });
+      // soft centre jewel
+      const g = cx.createRadialGradient(mx,my,0,mx,my,R*.18);
+      g.addColorStop(0,`hsla(${(d.hue+t*4)%360},70%,70%,.05)`); g.addColorStop(1,'rgba(0,0,0,0)');
+      cx.fillStyle=g; cx.beginPath(); cx.arc(mx,my,R*.18,0,TAU); cx.fill();
+    }
+  },
+
+  /* Nebula: big soft clouds of colour turning slowly, dust drifting through */
+  nebula: {
+    init(d){
+      d.clouds = Array.from({length:7}, (_,i) => ({r:.18+Math.random()*.35, d:.05+Math.random()*.32, a:Math.random()*TAU,
+        s:(Math.random()<.5?-1:1)*(.01+Math.random()*.025), hue:[200,265,300,330,180,240,280][i], k:Math.random()*TAU}));
+      d.dust = Array.from({length:Math.round(W*H/1400)}, () => ({a:Math.random()*TAU, d:Math.random(), z:.3+Math.random()*.7, tw:Math.random()*TAU}));
+    },
+    draw(d, t, dt){
+      cx.globalCompositeOperation='source-over'; cx.fillStyle='#010106'; cx.fillRect(0,0,W,H);
+      const mx=W/2, my=H/2, M=Math.max(W,H);
+      cx.globalCompositeOperation='lighter';
+      for(const c of d.clouds){
+        const a = c.a + t*c.s, x = mx + Math.cos(a)*c.d*M, y = my + Math.sin(a*1.2)*c.d*M*.8;
+        const r = c.r*M*(1 + .12*Math.sin(t*.05 + c.k));
+        const g = cx.createRadialGradient(x,y,0,x,y,r);
+        g.addColorStop(0,`hsla(${c.hue + 20*Math.sin(t*.03+c.k)},70%,45%,.20)`);
+        g.addColorStop(.5,`hsla(${c.hue+30},65%,30%,.08)`);
+        g.addColorStop(1,'hsla(0,0%,0%,0)');
+        cx.fillStyle=g; cx.fillRect(x-r,y-r,r*2,r*2);
+      }
+      // slow galactic swirl of dust
+      const R = Math.hypot(W,H)/2;
+      for(const p of d.dust){
+        p.a += dt*.02*(1.2 - p.d);
+        const x = mx + Math.cos(p.a)*p.d*R, y = my + Math.sin(p.a)*p.d*R*.62;
+        const al = (.25 + .35*Math.sin(t*.5+p.tw))*p.z;
+        cx.fillStyle=`rgba(230,225,255,${al})`;
+        cx.fillRect(x,y,1+p.z,1+p.z);
+      }
+    }
+  },
+
+  /* Stars: very slow outward flow with a faint ring to breathe along to (the original Drift) */
+  stars: {
+    init(d){
+      d.parts = Array.from({length:Math.round(Math.min(260, W*H/2200))}, () => ({a:Math.random()*TAU, d:Math.random(), z:.4+Math.random()*.6, tw:Math.random()*TAU}));
+      d.blobs = [0,1,2].map(i => ({a:Math.random()*6.28, s:.02+.015*i, hue:[175,250,205][i]}));
+    },
+    draw(d, t, dt){
+      const mx=W/2, my=H/2, M=Math.hypot(W,H)/2;
+      cx.globalCompositeOperation='source-over'; cx.fillStyle='#000'; cx.fillRect(0,0,W,H);
+      cx.globalCompositeOperation='lighter';
+      d.blobs.forEach(b => {
+        const tt = t*b.s + b.a, x = mx + Math.cos(tt)*W*.28, y = my + Math.sin(tt*1.3)*H*.22, r = Math.max(W,H)*.55;
+        const g = cx.createRadialGradient(x,y,0,x,y,r);
+        g.addColorStop(0,`hsla(${b.hue},35%,32%,.16)`); g.addColorStop(1,`hsla(${b.hue},35%,20%,0)`);
+        cx.fillStyle=g; cx.fillRect(0,0,W,H);
+      });
+      cx.globalCompositeOperation='source-over';
+      const br = .5 - .5*Math.cos(t/10*TAU);
+      cx.strokeStyle=`rgba(180,175,230,${.04+.07*br})`; cx.lineWidth=1.5;
+      cx.beginPath(); cx.arc(mx,my,Math.min(W,H)*(.16+.08*br),0,TAU); cx.stroke();
+      for(const p of d.parts){
+        p.d += dt*.1*(.25+p.d)*p.z;
+        if(p.d > 1){ p.a=Math.random()*TAU; p.d=Math.random()*.08 }
+        const x = mx + Math.cos(p.a)*p.d*M, y = my + Math.sin(p.a)*p.d*M;
+        const a = Math.min(1, p.d*4) * (.25+.2*Math.sin(t*.6+p.tw)) * p.z;
+        cx.fillStyle=`rgba(210,220,235,${a})`;
+        cx.beginPath(); cx.arc(x,y,.6+1.4*p.d*p.z,0,TAU); cx.fill();
+      }
+    }
+  }
+};
 
 /* ---------- Lock-in ---------- */
 function initLock(){
