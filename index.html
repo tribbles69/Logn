@@ -91,7 +91,9 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 #hrLive{position:absolute;top:calc(env(safe-area-inset-top) + 36px);left:0;right:0;text-align:center;
   font-size:13px;color:rgba(214,226,224,.28);font-variant-numeric:tabular-nums;pointer-events:none}
 #hrvStage{position:fixed;inset:0;background:#000;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px}
-#hvVid{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+#hvVid{width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:18px;border:1px solid var(--line);background:#111}
+#hvVid.off{display:none}
+#hvDiag{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 82px);text-align:center;font-size:11px;color:rgba(214,226,224,.3);font-variant-numeric:tabular-nums;pointer-events:none;padding:0 16px}
 #hv{width:100%;max-width:520px;height:30vh;display:block}
 #hvBig{font-size:56px;font-weight:300;margin-top:18px;font-variant-numeric:tabular-nums;color:var(--text)}
 #hvSub{color:var(--dim);font-size:15px;text-align:center;line-height:1.5;max-width:340px;margin-top:6px;min-height:46px}
@@ -250,6 +252,7 @@ h1{font-weight:300;letter-spacing:.35em;font-size:28px;margin:0 0 4px;text-trans
 
 <div id="hrvStage" class="hidden">
   <video id="hvVid" playsinline muted></video>
+  <div id="hvDiag"></div>
   <canvas id="hv"></canvas>
   <div id="hvBig"></div>
   <div id="hvSub"></div>
@@ -608,18 +611,21 @@ function hrvIntro(src){
 }
 
 async function hrvStart(src){
-  Object.assign(HV, {on:true, src, dur:+S.dHrv*60, T:[], V:[], phase:'wait', phaseAt:performance.now(), offAt:0, stream:null, torch:false, rr0:0, t0:0});
+  Object.assign(HV, {on:true, src, dur:+S.dHrv*60, T:[], V:[], G:[], phase:'wait', phaseAt:performance.now(), offAt:0, stream:null, torch:false, t0:0, frames:[], last:{r:0,g:0,b:0}, label:''});
+  $('#hvVid').classList.toggle('off', src !== 'camera'); $('#hvDiag').textContent = '';
   $('#home').classList.add('hidden'); $('#hrvStage').classList.remove('hidden'); hvAlt(null);
   try{ await document.documentElement.requestFullscreen?.({navigationUI:'hide'}) }catch(e){}
   lockScreen(); hvFit();
   if(src === 'camera'){
     hvSay('', 'Starting the camera…');
     try{
-      const st = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:'environment'}, width:{ideal:320}, height:{ideal:240}, frameRate:{ideal:30}}});
+      const st = await camOpen();
       HV.stream = st;
       const tr = st.getVideoTracks()[0];
-      try{ await tr.applyConstraints({advanced:[{torch:true}]}); HV.torch = !!(tr.getSettings && tr.getSettings().torch) }catch(e){}
+      HV.label = tr.label || '';
       const v = $('#hvVid'); v.srcObject = st; await v.play();
+      await torchOn(tr); // after play too: some phones drop the torch when the stream starts
+      setTimeout(() => { if(HV.on && HV.stream === st) torchOn(tr) }, 1500);
       HV.grab = document.createElement('canvas'); HV.grab.width = 32; HV.grab.height = 24;
       HV.gx = HV.grab.getContext('2d', {willReadFrequently:true});
       hrvFrameLoop();
@@ -636,51 +642,90 @@ async function hrvStart(src){
 }
 
 /* ---- camera path ---- */
+const camC = extra => ({audio:false, video:Object.assign({width:{ideal:320}, height:{ideal:240}, frameRate:{ideal:30}}, extra)});
+const hasTorch = tr => { try{ return !!(tr.getCapabilities && tr.getCapabilities().torch) }catch(e){ return false } };
+/* The default rear camera on a multi-lens phone isn't always the one beside the flash, so if it has
+   no torch, try the other rear cameras and keep the first that does. */
+async function camOpen(){
+  let st = await navigator.mediaDevices.getUserMedia(camC({facingMode:{ideal:'environment'}}));
+  if(hasTorch(st.getVideoTracks()[0])) return st;
+  try{
+    const cur = st.getVideoTracks()[0].getSettings().deviceId;
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput' && d.deviceId !== cur && !/front|user|face/i.test(d.label));
+    for(const c of cams){
+      st.getTracks().forEach(t => t.stop());
+      const s2 = await navigator.mediaDevices.getUserMedia(camC({deviceId:{exact:c.deviceId}})).catch(() => null);
+      if(s2 && hasTorch(s2.getVideoTracks()[0])) return s2;
+      st = s2 || await navigator.mediaDevices.getUserMedia(camC({facingMode:{ideal:'environment'}}));
+    }
+  }catch(e){}
+  return st;
+}
+async function torchOn(tr){
+  try{ await tr.applyConstraints({advanced:[{torch:true}]}) }catch(e){}
+  try{ HV.torch = !!tr.getSettings().torch || hasTorch(tr) }catch(e){}
+}
 function hrvFrameLoop(){
   const v = $('#hvVid');
   const onFrame = (now, meta) => {
     if(!HV.on) return;
-    const t = (meta && meta.captureTime) || now;
-    HV.gx.drawImage(v, 0, 0, 32, 24);
+    const ct = meta && meta.captureTime, t = ct && Math.abs(ct - now) < 1000 ? ct : now;
+    const vw = v.videoWidth, vh = v.videoHeight;
+    if(vw && vh) HV.gx.drawImage(v, vw*.2, vh*.2, vw*.6, vh*.6, 0, 0, 32, 24); // centre 60%: the edges catch light leaking round the finger
     const d = HV.gx.getImageData(0, 0, 32, 24).data;
-    let r = 0, g = 0; for(let i=0;i<d.length;i+=4){ r += d[i]; g += d[i+1] }
-    r /= d.length/4; g /= d.length/4;
-    hrvCamSample(t, r, g);
+    let r = 0, g = 0, b = 0; for(let i=0;i<d.length;i+=4){ r += d[i]; g += d[i+1]; b += d[i+2] }
+    const n = d.length/4; r /= n; g /= n; b /= n;
+    HV.frames.push(now); while(HV.frames.length && HV.frames[0] < now - 2000) HV.frames.shift();
+    HV.last = {r, g, b};
+    hrvCamSample(t, r, g, b);
     v.requestVideoFrameCallback ? v.requestVideoFrameCallback(onFrame) : requestAnimationFrame(n => onFrame(n));
   };
   v.requestVideoFrameCallback ? v.requestVideoFrameCallback(onFrame) : requestAnimationFrame(n => onFrame(n));
 }
 const SETTLE = 5; // seconds of fingertip before recording, while the camera's exposure settles
-function hrvCamSample(t, r, g){
+function hrvDiag(){
+  const L = HV.last, fps = HV.frames.length/2;
+  $('#hvDiag').textContent = `R ${Math.round(L.r)} · G ${Math.round(L.g)} · B ${Math.round(L.b)} · ${Math.round(fps)} fps · torch ${HV.torch ? 'on' : 'off'}${HV.label ? ' · ' + HV.label.slice(0,28) : ''}`;
+}
+/* Red-dominant and bright enough. Lenient on purpose: under a torch, auto-exposure can push red
+   (and sometimes green) right up to 255, which the old "red well above green" test rejected. */
+const isFinger = (r, g, b) => r > 40 && r >= g && r > b * 1.3; // blood blocks blue; a white wall or a room doesn't
+function hrvCamSample(t, r, g, b){
   const now = performance.now();
-  const finger = r > 60 && r > g * 1.5;
+  hrvDiag();
+  const finger = isFinger(r, g, b);
   if(!finger){
     if(!HV.offAt) HV.offAt = now;
-    if(HV.phase !== 'wait' && now - HV.offAt > 1200){ HV.phase = 'wait'; HV.T = []; HV.V = []; buzz([20,60,20]) }
+    if(HV.phase !== 'wait' && now - HV.offAt > 1200){ HV.phase = 'wait'; HV.T = []; HV.V = []; HV.G = []; buzz([20,60,20]) }
     if(HV.phase === 'wait') hvSay('', HV.torch ? 'Cover the camera and flash with a fingertip.' : 'Cover the camera with a fingertip. No torch on this phone, so use a bright room or a lamp behind your finger.');
     hrvDraw(); return;
   }
   HV.offAt = 0;
-  if(HV.phase === 'wait'){ HV.phase = 'settle'; HV.phaseAt = now; HV.T = []; HV.V = [] }
-  HV.T.push(t); HV.V.push(r);
+  if(HV.phase === 'wait'){ HV.phase = 'settle'; HV.phaseAt = now; HV.T = []; HV.V = []; HV.G = [] }
+  HV.T.push(t); HV.V.push(r); HV.G.push(g);
   if(HV.phase === 'settle'){
     const left = SETTLE - (now - HV.phaseAt)/1000;
     hvSay('', `Hold still… starting in ${Math.ceil(left)}`);
-    if(left <= 0){ HV.phase = 'rec'; HV.phaseAt = now; HV.T = []; HV.V = []; buzz(40) }
+    if(left <= 0){ HV.phase = 'rec'; HV.phaseAt = now; HV.T = []; HV.V = []; HV.G = []; buzz(40) }
   } else if(HV.phase === 'rec'){
     const el = (now - HV.phaseAt)/1000, left = HV.dur - el;
     if(left <= 0) return hrvFinish();
     const w = hvWindow(8000), p = ppgProcess(w.T, w.V).peaks;
     const rr = p.slice(1).map((x,i) => x - p[i]), bpm = rr.length > 2 ? Math.round(60000/median(rr)) : null;
     $('#hvBig').textContent = `${Math.floor(left/60)}:${String(Math.floor(left%60)).padStart(2,'0')}`;
-    $('#hvSub').textContent = bpm ? `♥ ${bpm} · keep still` : 'Finding your pulse… keep still';
+    $('#hvSub').textContent = bpm ? `♥ ${bpm} · keep still`
+      : el > 8 && HV.last.r > 250 ? 'Signal is maxed out. Press a little lighter, or move your finger slightly off the flash.'
+      : 'Finding your pulse… keep still';
   }
   hrvDraw();
 }
+/* Red carries the pulse best, unless it's clipped at 255, in which case green is used. Decided over the whole
+   slice so the channel never switches mid-wave. */
+function hvPick(V, G){ return median(V) > 245 ? G : V }
 function hvWindow(ms){
   const T = HV.T, end = T[T.length-1]; let i = T.length - 1;
   while(i > 0 && T[i-1] >= end - ms) i--;
-  return {T:T.slice(i), V:HV.V.slice(i)};
+  return {T:T.slice(i), V:hvPick(HV.V.slice(i), HV.G.slice(i))};
 }
 
 /* ---- watch path ---- */
@@ -721,7 +766,8 @@ function hrvDraw(){
     pts = p.y.map((v,i) => [ (win.T[i]-t0)/span*w, h/2 - v/amp*h*.42 ]);
     ticks = p.peaks.map(t => (t - t0)/span*w);
   } else if(HV.src === 'watch'){
-    const rr = HR.rr.filter(x => x[0] >= (HV.t0 || Date.now())).map(x => x[1]).slice(-40);
+    let rr = HR.rr.filter(x => x[0] >= (HV.t0 || Date.now())).map(x => x[1]).slice(-40);
+    if(rr.length < 2) rr = HR.samples.filter(x => x[0] >= Date.now() - 30000).map(x => 60000/x[1]); // no beat-to-beat data: show heart rate so you can see it's alive
     if(rr.length > 1){
       const lo = Math.min(...rr) - 20, hi = Math.max(...rr) + 20;
       pts = rr.map((v,i) => [ i/(rr.length-1)*w, h - (v-lo)/(hi-lo)*h ]);
@@ -753,7 +799,7 @@ addEventListener('resize', () => { if(HV.on) hvFit() });
 async function hrvFinish(){
   const src = HV.src, secs = HV.dur;
   let rr;
-  if(src === 'camera'){ const p = ppgProcess(HV.T, HV.V).peaks; rr = p.slice(1).map((x,i) => x - p[i]) }
+  if(src === 'camera'){ const p = ppgProcess(HV.T, hvPick(HV.V, HV.G)).peaks; rr = p.slice(1).map((x,i) => x - p[i]) }
   else rr = HR.rr.filter(x => x[0] >= HV.t0).map(x => x[1]);
   const r = hrvFromRR(rr);
   hrvExit(); buzz([60,80,60]);
